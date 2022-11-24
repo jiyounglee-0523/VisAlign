@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" autoUpload="Always" serverName="jylee@143.248.157.26:13558 password" remoteFilesAllowedToDisappearOnAutoupload="false">
+    <serverData>
+      <paths name="jylee@143.248.157.26:13558 password">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/jylee/RELIABILITY/reliability" local="$PROJECT_DIR$" web="/" />
+            <mapping local="" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
+  </component>
+</project>
