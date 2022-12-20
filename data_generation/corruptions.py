@@ -1,4 +1,3 @@
-import torch
 import numpy as np
 from PIL import Image
 import skimage as sk
@@ -6,17 +5,18 @@ from skimage.filters import gaussian
 from io import BytesIO
 from wand.image import Image as WandImage
 from wand.api import library as wandlibrary
-import wand.color as WandColor
 import ctypes
 from PIL import Image as PILImage
+from PIL import ImageEnhance
+import xml.etree.ElementTree as ET
 import cv2
 from scipy.ndimage import zoom as scizoom
 from scipy.ndimage.interpolation import map_coordinates
-import warnings
 import os
-from pkg_resources import resource_filename
+import torchvision
 import torchvision.transforms as trn
-from matplotlib import pyplot as plt
+
+from generate_data import return_filename
 
 def disk(radius, alias_blur=0.1, dtype=np.float32):
     if radius <= 8:
@@ -222,7 +222,7 @@ def frost(x, severity=1):
          ][severity - 1]
     idx = np.random.randint(5)
     filename = ['./frost1.png', './frost2.png', './frost3.png', './frost4.jpg', './frost5.jpg', './frost6.jpg'][idx]
-    frost = cv2.imread(filename)
+    frost = cv2.imread(os.path.join('/home/jylee/RELIABILITY/reliability/data_generation', filename))
     # randomly crop and convert to rgb
     x_start, y_start = np.random.randint(0, frost.shape[0] - 224), np.random.randint(0, frost.shape[1] - 224)
     frost = frost[x_start:x_start + 224, y_start:y_start + 224][..., [2, 1, 0]]
@@ -271,11 +271,12 @@ def contrast(x, severity=1):
 
 
 def brightness(x, severity=1):
-    c = [.1, .2, .3, .4, .5, .6, .7, .8, .9, 1.][severity - 1]
+    c = [.15, .2, .3, .4, .5, .6, .7, .8, .9, 1.][severity - 1]
 
-    raise NotImplementedError
+    enhancer = ImageEnhance.Brightness(x)
+    im_output = enhancer.enhance(c)
 
-    # return np.clip(x, 0, 1) * 255
+    return im_output
 
 def jpeg_compression(x, severity=1):
     c = [25, 18, 15, 10, 7, 5, 4, 3, 2, 1][severity - 1]
@@ -331,3 +332,48 @@ def elastic_transform(image, severity=1):
     x, y, z = np.meshgrid(np.arange(shape[1]), np.arange(shape[0]), np.arange(shape[2]))
     indices = np.reshape(y + dy, (-1, 1)), np.reshape(x + dx, (-1, 1)), np.reshape(z, (-1, 1))
     return np.clip(map_coordinates(image, indices, order=1, mode='reflect').reshape(shape), 0, 1) * 255
+
+##### Cropping
+def bounding_box(image_name, label):
+    # print("bounding box data is in '/home/edlab/jylee/RELIABLE/data/val' else fix the path")
+
+    xmltree = ET.parse(f"/home/edlab/jylee/RELIABLE/data/val/{image_name[:-5]}.xml")
+    root = xmltree.getroot()
+
+    objs = root.findall('object')
+    filenames = return_filename(label)
+
+    for idx, obj in enumerate(objs):
+        if obj.find('name').text in filenames:
+            break
+
+    bndbox = obj.find('bndbox')
+    x1 = float(bndbox[0].text)
+    y1 = float(bndbox[1].text)
+    x2 = float(bndbox[2].text)
+    y2 = float(bndbox[3].text)
+
+    bbox = (x1, y1, x2, y2)
+
+    return bbox
+
+def cropping_fn(resize):
+    transforms = trn.Compose([
+        torchvision.transforms.Resize(335),
+        torchvision.transforms.CenterCrop(resize),
+        torchvision.transforms.Resize(224)
+    ])
+    return transforms
+
+def cropping(image_path, image_name, label, resize):
+    bbox = bounding_box(image_name, label)
+
+    img = Image.open(os.path.join(image_path, image_name))
+    img = img.crop(bbox)
+
+    transforms = cropping_fn(resize)
+
+    img = transforms(img)
+    return img, image_name
+
+

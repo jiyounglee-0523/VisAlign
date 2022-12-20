@@ -11,14 +11,12 @@ from wand.api import library as wandlibrary
 import wand.color as WandColor
 import ctypes
 from PIL import Image as PILImage
-import cv2
 from scipy.ndimage import zoom as scizoom
 from scipy.ndimage.interpolation import map_coordinates
 import warnings
 import os
 from pkg_resources import resource_filename
 import torchvision.transforms as trn
-from matplotlib import pyplot as plt
 
 import argparse
 import random
@@ -49,7 +47,7 @@ def accimage_loader(path):
         return pil_loader(path)
 
 def return_filename(label):
-    assert label in ['fish', 'bear', 'boat', 'cat', 'bottle', 'truck', 'bird', 'dog'], "label out of region!"
+    assert label in ['fish', 'bear', 'boat', 'cat', 'bottle', 'truck', 'bird', 'dog'], "label out of range!"
     filename = list()
 
     if label == 'fish':
@@ -74,7 +72,7 @@ def return_filename(label):
             'n07646821', 'n01860187', 'n02002556', 'n02002724', 'n02006656', 'n02007558', 'n02009229', 'n02009912', 'n02011460', 'n02013706', 'n02017213', 'n02018207',
             'n02018795', 'n02025239', 'n02027492', 'n02028035', 'n02033041', 'n02037110', 'n02051845', 'n02056570']
     elif label == 'dog':
-        filename == ['n02085782', 'n02085936', 'n02086079', 'n02086240', 'n02086646', 'n02086910', 'n02087046', 'n02087394', 'n02088094', 'n02088238', 'n02088364',
+        filename = ['n02085782', 'n02085936', 'n02086079', 'n02086240', 'n02086646', 'n02086910', 'n02087046', 'n02087394', 'n02088094', 'n02088238', 'n02088364',
             'n02088466', 'n02088632', 'n02089078', 'n02089867', 'n02089973', 'n02090379', 'n02090622', 'n02090721', 'n02091032', 'n02091134', 'n02091244', 'n02091467',
             'n02091635', 'n02091831', 'n02092002', 'n02092339', 'n02093256', 'n02093428', 'n02093647', 'n02093754', 'n02093859', 'n02093991', 'n02094114', 'n02094258',
             'n02094433', 'n02095314', 'n02095570', 'n02095889', 'n02096051', 'n02096294', 'n02096437', 'n02096585', 'n02097047', 'n02097130', 'n02097209', 'n02097298',
@@ -86,22 +84,69 @@ def return_filename(label):
             'n02113712', 'n02113799', 'n02113978']
     return filename
 
-def return_images(image_path:str, filename:list):
-    pass
+def return_image_list(filename_list):
+    with open('/home/data_storage/imagenet/valid.txt', 'r') as f:
+        valid_image_list = f.readlines()
+
+    valid_image_list = [v[:-3] for v in valid_image_list]
+    valid_image_list = [v.split(' ')[0] for v in valid_image_list if v.split(' ')[1] in filename_list]
+    return valid_image_list
+
+def return_image_name(image_path:str, label):
+    filename_list = return_filename(label)
+    image_list = return_image_list(filename_list)
+    image_name = random.choice(image_list)
+
+    # image_list = os.listdir(os.path.join(image_path, image_name))
+    # image_name = random.choice(image_list)
+    return image_name
+
+def generate_sample(image_path, label, corruption, severity):
+    image_name = return_image_name(image_path, label)
+
+    img = default_loader(os.path.join(image_path, image_name))
+    transform = trn.Compose([trn.Resize(256), trn.CenterCrop(224), trn.Resize(224)])
+    img = transform(img)
+    corrupted_img = corruption(img, severity=severity)
+    return corrupted_img, image_name
+
+def save_image(corrupted_sample, save_path, image_name, label, corruption, severity):
+    Image.fromarray(np.uint8(corrupted_sample)).save(os.path.join(save_path, f'{image_name[:-5]}_{label}_{corruption}_{severity}.jpg'), quality=85, optimize=True)
 
 
 
-def generate_samples(image_path):
+def generate_samples(image_path, save_path, number_of_samples_per_case):
+    # list of functions
     corruption_lists = [gaussian_noise, shot_noise, impulse_noise, glass_blur, defocus_blur, motion_blur, zoom_blur, fog, frost, snow, contrast,
                         brightness, jpeg_compression, pixelate, elastic_transform]
 
+    label_lists = ['dog', 'fish', 'bear', 'boat', 'cat', 'bottle', 'truck', 'bird']
+
+    print(f'Total number of generated corrupted samples is {number_of_samples_per_case * (len(corruption_lists)+1) * len(label_lists) * 10}')
+
+    for label in label_lists:
+        for corruption in corruption_lists:
+            for severity in range(1, 11):
+                for _ in range(number_of_samples_per_case):
+                    corrupted_sample, image_name = generate_sample(image_path, label, corruption, severity=severity)
+                    save_image(corrupted_sample, save_path, image_name, label, corruption.__name__, severity)
+
+    for label in label_lists:
+        for resize in [300, 250, 200, 150, 100, 50, 40, 30, 20, 10]:
+            for _ in range(number_of_samples_per_case):
+                image_name = return_image_name(image_path, label)
+                cropped_sample, image_name = cropping(image_path, image_name, label, resize)
+                save_image(cropped_sample, save_path, image_name, label, 'cropping', resize)
 
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--image_path', type=str, default='/home/data_storage/imagenet/ILSVRC2012_img_val')
+    parser.add_argument('--save_path', type=str)
+    parser.add_argument('--number_of_samples_per_case', type=int, help='number of samples to be generated in one label with one severity of one corruption')
     args = parser.parse_args()
+
 
     SEED = 1234
     random.seed(SEED)
@@ -110,7 +155,7 @@ def main():
     torch.cuda.manual_seed(SEED)
     torch.backends.cudnn.deterministic = True
 
-    generate_samples(args.image_path)
+    generate_samples(args.image_path, args.save_path, args.number_of_samples_per_case)
 
 
 if __name__ == '__main__':
