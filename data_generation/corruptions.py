@@ -271,7 +271,7 @@ def contrast(x, severity=1):
 
 
 def brightness(x, severity=1):
-    c = [.15, .2, .3, .4, .5, .6, .7, .8, .9, 1.][severity - 1]
+    c = [1.5, 2., 3., 4., 5., 6., 7., 8., 9., 10.][severity - 1]
 
     enhancer = ImageEnhance.Brightness(x)
     im_output = enhancer.enhance(c)

@@ -120,6 +120,7 @@ def generate_samples(image_path, save_path, number_of_samples_per_case):
     corruption_lists = [gaussian_noise, shot_noise, impulse_noise, glass_blur, defocus_blur, motion_blur, zoom_blur, fog, frost, snow, contrast,
                         brightness, jpeg_compression, pixelate, elastic_transform]
 
+
     label_lists = ['dog', 'fish', 'bear', 'boat', 'cat', 'bottle', 'truck', 'bird']
 
     print(f'Total number of generated corrupted samples is {number_of_samples_per_case * (len(corruption_lists)+1) * len(label_lists) * 10}')
