@@ -1,0 +1,9 @@
+trainer:
+  lr: 1e-5
+  optimizer: 'AdamW'
+  lr_scheduler: 'ReduceLROnPlateau'
+
+dataset:
+  batch_size: 452
+  dataloader_num_workers: 8,
+  train_path: './'
