@@ -7,3 +7,14 @@ dataset:
   batch_size: 452
   dataloader_num_workers: 8,
   train_path: './'
+
+vit:
+  embed_dim: 256
+  hidden_dim: 512
+  num_heads: 8
+  num_layers: 6
+  num_channels: 3
+  patch_size: 4
+  num_patches: 64
+  num_classes: 10
+  dropout: 0.2

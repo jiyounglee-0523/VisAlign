@@ -56,7 +56,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     # utils
-    parser.add_argument('--config', default='./config.imagenet.yaml', type=str)
+    parser.add_argument('--config', default='./config/imagenet.yaml', type=str)
     parser.add_argument('--seed', default=45)
     parser.add_argument('--early_stopping', action='store_true')
     parser.add_argument('--early_stopping_patience', default=30, type=int)

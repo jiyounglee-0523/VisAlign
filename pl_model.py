@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from models.vit_model import VisionTransformer
 
 import pytorch_lightning as pl
 
@@ -11,26 +12,37 @@ class BaseModule(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
         self.args = args
+        self.config = args.config
 
-        self.model = 'XX'
+        model_name = self.config['model']
+
+        if model_name == 'vit':
+            self.model = VisionTransformer(**self.config['vit'])
+        
+        else:
+            self.model = None
+        
+        assert self.model != None
 
     def forward(self, x):
         return self.model(x)
 
-    def training_step(self, batch, batch_idx):
-        x = batch['XX']
-        logit = self.forward(x)
-        loss = 'XX'
+    def _calculate_ce_loss(self, batch, mode="train"):
+        imgs, labels = batch
+        preds = self.model(imgs)
+        loss = F.cross_entropy(preds, labels)
+        acc = (preds.argmax(dim=-1) == labels).float().mean()
 
-        self.log('train_loss', loss)
+        self.log("%s_loss" % mode, loss)
+        self.log("%s_acc" % mode, acc)
+        return loss
+
+    def training_step(self, batch, batch_idx):
+        loss = self._calculate_ce_loss(batch, mode="train")
         return loss
 
     def validation_step(self, batch, batch_idx):
-        x = batch['XX']
-        logit = self.forward(x)
-        loss = 'XX'
-
-        self.log('eval_loss', loss)
+        loss = self._calculate_ce_loss(batch, mode="val")
         return loss
 
     def validation_epoch_end(self, validation_step_outputs):
@@ -41,11 +53,7 @@ class BaseModule(pl.LightningModule):
         pass
 
     def test_step(self, batch, batch_idx):
-        x = batch['XX']
-        logit = self.forward(x)
-        loss = 'XX'
-
-        self.log('test_loss', loss)
+        loss = self._calculate_ce_loss(batch, mode="test")
         return loss
 
     def test_epoch_end(self, test_step_outputs):
