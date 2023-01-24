@@ -16,7 +16,7 @@ import os
 import torchvision
 import torchvision.transforms as trn
 
-from generate_data import return_filename
+from generate_corruptions import return_filename
 
 def disk(radius, alias_blur=0.1, dtype=np.float32):
     if radius <= 8:
@@ -221,7 +221,7 @@ def frost(x, severity=1):
          (0.1, 1.0),
          ][severity - 1]
     idx = np.random.randint(5)
-    filename = ['./frost1.png', './frost2.png', './frost3.png', './frost4.jpg', './frost5.jpg', './frost6.jpg'][idx]
+    filename = ['frost1.png', 'frost2.png', 'frost3.png', 'frost4.jpg', 'frost5.jpg', 'frost6.jpg'][idx]
     frost = cv2.imread(os.path.join('/home/jylee/RELIABILITY/reliability/data_generation', filename))
     # randomly crop and convert to rgb
     x_start, y_start = np.random.randint(0, frost.shape[0] - 224), np.random.randint(0, frost.shape[1] - 224)
@@ -366,10 +366,14 @@ def cropping_fn(resize):
     return transforms
 
 def cropping(image_path, image_name, label, resize):
-    bbox = bounding_box(image_name, label)
+    if label != 'giraffe':
+        bbox = bounding_box(image_name, label)
 
-    img = Image.open(os.path.join(image_path, image_name))
-    img = img.crop(bbox)
+        img = Image.open(os.path.join(image_path, image_name))
+        img = img.crop(bbox)
+
+    elif label == 'giraffe':
+        img = Image.open(os.path.join('/home/edlab/jylee/RELIABLE/data/animal/giraffe/data/test', image_name))
 
     transforms = cropping_fn(resize)
 
