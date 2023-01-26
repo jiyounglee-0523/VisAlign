@@ -1,3 +1,5 @@
+model: vit
+
 trainer:
   lr: 1e-5
   optimizer: 'AdamW'

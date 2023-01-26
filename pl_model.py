@@ -12,12 +12,11 @@ class BaseModule(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
         self.args = args
-        self.config = args.config
 
-        model_name = self.config['model']
+        model_name = self.args.model
 
         if model_name == 'vit':
-            self.model = VisionTransformer(**self.config['vit'])
+            self.model = VisionTransformer(**self.args.vit)
         
         else:
             self.model = None

@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from att_block import AttentionBlock
+from models.att_block import AttentionBlock
 
 def img_to_patch(x, patch_size, flatten_channels=True):
     """
@@ -24,6 +24,7 @@ class VisionTransformer(nn.Module):
             num_channels,
             num_heads,
             embed_dim,
+            hidden_dim,
             num_layers,
             num_classes,
             dropout,
@@ -36,7 +37,7 @@ class VisionTransformer(nn.Module):
 
         self.input_layer = nn.Linear(num_channels * (patch_size ** 2), embed_dim)
         self.transformer = nn.Sequential(
-            *(AttentionBlock(embed_dim, num_heads, embed_dim, dropout) for _ in range(num_layers))
+            *(AttentionBlock(embed_dim, hidden_dim, num_heads, dropout) for _ in range(num_layers))
         )
         self.mlp_head = nn.Sequential(
             nn.LayerNorm(embed_dim),
