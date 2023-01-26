@@ -2,7 +2,9 @@ import torch
 import torch.nn
 
 import pytorch_lightning as pl
-from pytorch_lightning.plugins import DDPPlugin
+from pytorch_lightning.strategies import DDPStrategy
+from pl_model import BaseModule
+from dataset.imagenet import ImageNetModule
 
 import os
 import argparse
@@ -87,11 +89,13 @@ def main():
     if not args.debug:
         logger = pl.loggers.WandbLogger(config=args, project='XX', entity='XX')
 
+    
+
     # Call Dataset
     dataloader = 'XX'
 
     # Call Model
-    model = 'XX'
+    model = BaseModule(args)
 
     # Call Trainer Config
     trainer_config = get_train_config(args)
@@ -101,16 +105,16 @@ def main():
             **trainer_config,
             num_sanity_val_steps=1,
             gradient_clip_val=0.5,
-            accelerator='ddp',
-            plugins=DDPPlugin(find_unused_parameters=False),
+            accelerator='cuda',
+            # plugins=DDPStrategy(find_unused_parameters=False),
         )
     elif not args.debug:
         trainer = pl.Trainer(
             **trainer_config,
             num_sanity_val_steps=1,
             gradient_clip_val=0.5,
-            accelerator='ddp',
-            plugins=DDPPlugin(find_unused_parameters=False),
+            accelerator='cuda',
+            # plugins=DDPStrategy(find_unused_parameters=False),
             logger=logger,
         )
 
