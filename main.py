@@ -68,6 +68,7 @@ def main():
     parser.add_argument('--save_top_k', default=10, type=int)
     parser.add_argument('--reload_ckpt_dir', type=str)
     parser.add_argument('--n_gpus', default=1, type=int)
+    parser.add_argument('--model_name', default='vit', type=str)
 
     args = parser.parse_args()
 
