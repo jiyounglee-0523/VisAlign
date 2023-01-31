@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from models.vit_model import VisionTransformer
+from models.efficientnet_model import EfficientNet
+from models.convnext_model import ConvNext
 
 import pytorch_lightning as pl
 
@@ -13,15 +15,19 @@ class BaseModule(pl.LightningModule):
         super().__init__()
         self.args = args
 
-        model_name = self.args.model
+        if args.model_name == 'vit':
+            self.model = VisionTransformer(**self.args.vit, **self.args.model)
 
-        if model_name == 'vit':
-            self.model = VisionTransformer(**self.args.vit)
-        
+        elif args.model_name in ['efficientnet_b0', 'efficientnet_b1', 'efficientnet_b2']:
+            self.model = EfficientNet(model_name=args.model_name, **self.args.model)
+
+        elif args.model_name in ['convnext_tiny', 'convnext_small', 'convnext_base']:
+            self.model = ConvNext(model_name=args.model_name, **self.args.model)
+
         else:
             self.model = None
         
-        assert self.model != None
+        assert self.model is not None
 
     def forward(self, x):
         return self.model(x)
