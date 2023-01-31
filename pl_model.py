@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from models.vit_model import VisionTransformer
 from models.efficientnet_model import EfficientNet
 from models.convnext_model import ConvNext
+from mlp_mixer_pytorch import MLPMixer
 
 import pytorch_lightning as pl
 
@@ -23,6 +24,9 @@ class BaseModule(pl.LightningModule):
 
         elif args.model_name in ['convnext_tiny', 'convnext_small', 'convnext_base']:
             self.model = ConvNext(model_name=args.model_name, **self.args.model)
+
+        elif args.model_name == 'mlp':
+            self.model = MLPMixer(**self.args.mlp, **self.args.model)
 
         else:
             self.model = None

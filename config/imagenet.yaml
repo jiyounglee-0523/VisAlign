@@ -20,3 +20,10 @@ vit:
   patch_size: 4
   num_patches: 64
   dropout: 0.2
+
+mlp:
+  image_size: 256
+  channels: 3
+  patch_size: 16
+  dim: 512
+  depth: 12
