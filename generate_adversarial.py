@@ -166,7 +166,7 @@ def generate_adversarial_sample(image_path, save_path, label, epsilon, model_nam
 
         perturbed_data = fgsm_attack(image, epsilon, data_grad)
 
-        correct_pred = is_correct(model, image, target)
+        correct_pred = is_correct(model, perturbed_data, target)
 
         if correct_pred is False:
             save_image_fn(
