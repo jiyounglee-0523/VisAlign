@@ -13,7 +13,7 @@ from PIL import Image
 def transform_fn(is_training):
     if is_training:
         return T.Compose([
-            T.Resize(300),
+            T.Resize(256),
             T.RandomCrop(224, padding=4),
             T.RandomHorizontalFlip(),
             T.ToTensor(),
@@ -25,7 +25,7 @@ def transform_fn(is_training):
 
     elif not is_training:
         return T.Compose([
-            T.Resize(300),
+            T.Resize(256),
             T.CenterCrop(224),
             T.ToTensor(),
             T.Normalize(
