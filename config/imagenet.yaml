@@ -6,7 +6,8 @@ trainer:
 dataset:
   batch_size: 452
   dataloader_num_workers: 8,
-  train_path: './'
+  dataset_path: './'
+
 
 model:
   num_classes: 10
