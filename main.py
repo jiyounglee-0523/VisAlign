@@ -4,6 +4,7 @@ import torch.nn
 import pytorch_lightning as pl
 from pytorch_lightning.strategies import DDPStrategy
 from pl_model import BaseModule
+
 from dataset.imagenet import ImageNetModule
 
 import os
@@ -25,9 +26,9 @@ def get_train_config(args):
     # Early Stopping Callback
     if args.early_stopping is True:
         early_stop_callback = pl.callbacks.EarlyStopping(
-            monitor='eval_loss', # TODO: change!
+            monitor='val_acc',
             patience=args.early_stopping_patience,
-            mode='min',
+            mode='max',
             verbose=True
         )
         callbacks.append(early_stop_callback)
@@ -36,12 +37,12 @@ def get_train_config(args):
     if not args.debug:
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
             dirpath=args.save_dir,
-            filename="{epoch:06}--{eval_loss:.2f}",
+            filename="{epoch:06}--{val_acc:.2f}",
             verbose=True,
             save_last=True,
-            monitor='eval_loss',
+            monitor='val_acc',
             save_top_k=args.save_top_k,
-            mode='min',
+            mode='max',
         )
         callbacks.append(checkpoint_callback)
 
@@ -61,14 +62,15 @@ def main():
     parser.add_argument('--config', default='./config/imagenet.yaml', type=str)
     parser.add_argument('--seed', default=45)
     parser.add_argument('--early_stopping', action='store_true')
-    parser.add_argument('--early_stopping_patience', default=30, type=int)
+    parser.add_argument('--early_stopping_patience', default=15, type=int)
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--save_dir', default='./', type=str)
     parser.add_argument('--n_epochs', default=1000, type=int)
     parser.add_argument('--save_top_k', default=10, type=int)
     parser.add_argument('--reload_ckpt_dir', type=str)
     parser.add_argument('--n_gpus', default=1, type=int)
-    parser.add_argument('--model_name', default='vit', type=str)
+    parser.add_argument('--model_name', type=str)
+    parser.add_argument('--wandb_run_name', type=str)
 
     args = parser.parse_args()
 
@@ -88,12 +90,12 @@ def main():
 
     # logger
     if not args.debug:
-        logger = pl.loggers.WandbLogger(config=args, project='XX', entity='XX')
+        logger = pl.loggers.WandbLogger(config=args, project=args.wandb_run_name, entity="image_reliability", save_dir="/home/jylee/wandb")
 
     
 
     # Call Dataset
-    dataloader = 'XX'
+    dataloader = ImageNetModule(args)
 
     # Call Model
     model = BaseModule(args)
@@ -104,17 +106,21 @@ def main():
     if args.debug:
         trainer = pl.Trainer(
             **trainer_config,
-            num_sanity_val_steps=1,
+            num_sanity_val_steps=2,
             gradient_clip_val=0.5,
             accelerator='cuda',
+            log_every_n_steps=10,
+            strategy=DDPStrategy(find_unused_parameters=False),
             # plugins=DDPStrategy(find_unused_parameters=False),
         )
     elif not args.debug:
         trainer = pl.Trainer(
             **trainer_config,
-            num_sanity_val_steps=1,
+            num_sanity_val_steps=3,
             gradient_clip_val=0.5,
             accelerator='cuda',
+            log_every_n_steps=10,
+            strategy=DDPStrategy(find_unused_parameters=False),
             # plugins=DDPStrategy(find_unused_parameters=False),
             logger=logger,
         )
@@ -127,7 +133,7 @@ def main():
         datamodule=dataloader,
         ckpt_path=args.reload_ckpt_dir
     )
-    trainer.test()
+    # trainer.test()
 
 
 if __name__ == '__main__':
