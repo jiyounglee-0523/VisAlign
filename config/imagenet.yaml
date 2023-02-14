@@ -4,10 +4,22 @@ trainer:
   lr_scheduler: 'ReduceLROnPlateau'
 
 dataset:
-  batch_size: 452
-  dataloader_num_workers: 8,
-  dataset_path: './'
-
+  batch_size: 4
+  dataloader_num_workers: 8
+  train:
+    label_path: '/home/edlab/jylee/RELIABLE/data/final_dataset/final_train'
+    imagenet_path: '/home/data_storage/imagenet/train'
+    celeba_path: '/home/data_storage/CelebA/celeba/img_align_celeba'
+    giraffe_path: '/home/edlab/jylee/RELIABLE/data/animal/giraffe/data/train'
+    kangaroo_path: '/home/edlab/jylee/RELIABLE/data/animal/kangaroo/data/train'
+    lsp_path: '/home/edlab/jylee/RELIABLE/data/LSP/train'
+  eval:
+    label_path: '/home/edlab/jylee/RELIABLE/data/final_dataset/final_eval'
+    imagenet_path: '/home/data_storage/imagenet/train'
+    celeba_path: '/home/data_storage/CelebA/celeba/img_align_celeba'
+    giraffe_path: '/home/edlab/jylee/RELIABLE/data/animal/giraffe/data/val'
+    kangaroo_path: '/home/edlab/jylee/RELIABLE/data/animal/kangaroo/data/val'
+    lsp_path: '/home/edlab/jylee/RELIABLE/data/LSP/train'
 
 model:
   num_classes: 10

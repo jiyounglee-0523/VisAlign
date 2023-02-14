@@ -46,28 +46,65 @@ class BaseModule(pl.LightningModule):
 
     def _calculate_ce_loss(self, batch, mode="train"):
         imgs, labels = batch
+        labels = labels.squeeze(-1)
         preds = self.model(imgs)
+
         loss = F.cross_entropy(preds, labels)
+
         acc = (preds.argmax(dim=-1) == labels).float().mean()
 
-        self.log("%s_loss" % mode, loss)
-        self.log("%s_acc" % mode, acc)
+        self.log("%s_loss" % mode, loss, sync_dist=True)
+        self.log("%s_acc" % mode, acc, sync_dist=True)
         return loss
 
     def training_step(self, batch, batch_idx):
-        loss = self._calculate_ce_loss(batch, mode="train")
+        imgs, labels = batch
+        labels = labels.squeeze(-1)
+        preds = self.model(imgs)
+
+        loss = F.cross_entropy(preds, labels)
+
+        # log
+        self.log('train_loss', loss, sync_dist=True)
+
         return loss
 
+
     def validation_step(self, batch, batch_idx):
-        loss = self._calculate_ce_loss(batch, mode="val")
-        return loss
+        imgs, labels = batch
+        labels = labels.squeeze(-1)
+        preds = self.model(imgs)
+
+        output = {
+            'preds': preds,
+            'labels': labels,
+        }
+
+        # loss = self._calculate_ce_loss(batch, mode="val")
+        return output
 
     def validation_epoch_end(self, validation_step_outputs):
         '''
         validation_step_outputs: list
         DDP에서는 'GPU process' 별로 validation_step, validation_step_end를 거쳐 validation_step_ouptuts라는 리스트에 원소로 쌓인다.
         '''
-        pass
+
+        preds = []
+        labels = []
+
+        for val_step_output in validation_step_outputs:
+            preds.append(val_step_output['preds'])
+            labels.append(val_step_output['labels'])
+
+        preds = torch.cat(preds)
+        labels = torch.cat(labels)
+
+        loss = F.cross_entropy(preds, labels)
+        acc = (preds.argmax(dim=-1) == labels).float().mean()
+        # print(f'val_acc: {acc}', end='\n')
+
+        self.log('val_loss', loss, sync_dist=True)
+        self.log('val_acc', acc, sync_dist=True)
 
     def test_step(self, batch, batch_idx):
         loss = self._calculate_ce_loss(batch, mode="test")
@@ -82,11 +119,11 @@ class BaseModule(pl.LightningModule):
 
     def configure_optimizers(self):
         # optimizer
-        optimizer_fn = return_optimizer(self.args.optimizer)
-        optimizer = optimizer_fn(self.model.parameters(), lr=self.args.lr)
+        optimizer_fn = return_optimizer(self.args.trainer['optimizer'])
+        optimizer = optimizer_fn(self.model.parameters(), lr=float(self.args.trainer['lr']))
 
         # lr scheduler
-        lr_scheduler_fn = return_lr_scheduler(self.args.lr_scheduler)
+        lr_scheduler_fn = return_lr_scheduler(self.args.trainer['lr_scheduler'])
         scheduler = lr_scheduler_fn(
             optimizer,
             mode='min',
@@ -100,5 +137,5 @@ class BaseModule(pl.LightningModule):
         return {
             'optimizer': optimizer,
             'lr_scheduler': scheduler,
-            'monitor': 'eval_loss'
+            'monitor': 'val_loss'
         }
