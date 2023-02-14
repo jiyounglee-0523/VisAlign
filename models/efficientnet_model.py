@@ -2,9 +2,11 @@ import torch
 from torch import nn
 import torchvision
 from torchvision.models import efficientnet_b0, efficientnet_b1, efficientnet_b2
+from torchvision.models.efficientnet import MBConvConfig, EfficientNet
 
+from functools import partial
 
-class EfficientNet(nn.Module):
+class EfficientNetModule(nn.Module):
     def __init__(self,
                  model_name,
                  num_classes
@@ -19,6 +21,23 @@ class EfficientNet(nn.Module):
 
         elif model_name == 'efficientnet_b2':
             self.model = efficientnet_b2(num_classes=num_classes)
+
+        elif model_name == 'efficientnet_extra':
+            bneck_conf = partial(MBConvConfig, width_mult=4.1, depth_mult=4.0)
+
+            inverted_residual_setting = [
+                bneck_conf(1, 3, 1, 32, 16, 1),
+                bneck_conf(6, 3, 2, 16, 24, 2),
+                bneck_conf(6, 5, 2, 24, 40, 2),
+                bneck_conf(6, 3, 2, 40, 80, 3),
+                bneck_conf(6, 5, 1, 80, 112, 3),
+                bneck_conf(6, 5, 2, 112, 192, 4),
+                bneck_conf(6, 3, 1, 192, 320, 1),
+            ]
+
+            last_channel = None
+
+            self.model = EfficientNet(inverted_residual_setting, dropout=0.5, last_channel=last_channel, num_classes=10)
 
         else:
             raise NotImplementedError
