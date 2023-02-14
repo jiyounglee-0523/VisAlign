@@ -1,7 +1,8 @@
 import torch
 from torch import nn
 import torchvision
-from torchvision.models import convnext_tiny, convnext_small, convnext_base
+from torchvision.models import convnext_tiny, convnext_small, convnext_base, convnext_large
+from torchvision.models.convnext import ConvNeXt, CNBlockConfig
 
 
 class ConvNext(nn.Module):
@@ -19,6 +20,23 @@ class ConvNext(nn.Module):
 
         elif model_name == 'convnext_base':
             self.model = convnext_base(num_classes=num_classes)
+
+        elif model_name =='convnext_large':
+            self.model = convnext_large(num_classes=num_classes)
+
+        elif model_name == 'convnext_extra':
+            block_setting = [
+                CNBlockConfig(192, 384, 3),
+                CNBlockConfig(384, 768, 3),
+                CNBlockConfig(768, 1536, 50),
+                CNBlockConfig(1536, None, 3),
+            ]
+
+            self.model = ConvNeXt(
+                block_setting,
+                stochastic_depth_prob=0.5,
+                num_classes=num_classes,
+            )
 
         else:
             raise NotImplementedError

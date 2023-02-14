@@ -1,7 +1,62 @@
 import torch
 from torch import nn
-from models.att_block import AttentionBlock
+import torchvision
+from torchvision.models import vit_b_16, vit_l_16, vit_h_14
+from torchvision.models.vision_transformer import VisionTransformer
 
+
+class VisionTransformerModule(nn.Module):
+    def __init__(self,
+                 model_name,
+                 num_classes,
+                 ):
+        super().__init__()
+
+        if model_name == 'vit_b_16':
+            self.model = vit_b_16(num_classes=num_classes)
+
+        elif model_name == 'vit_l_16':
+            self.model = vit_l_16(num_classes=num_classes)
+
+        elif model_name == 'vit_h_14':
+            self.model = vit_h_14(num_classes=num_classes)
+
+        elif model_name == 'vit_30_16':
+            image_size = 224
+            patch_size = 16
+            num_layers = 30
+            num_heads = 16
+            hidden_dim = 1024
+            mlp_dim = 4096
+
+            self.model = VisionTransformer(
+                image_size=image_size,
+                patch_size=patch_size,
+                num_layers=num_layers,
+                num_heads=num_heads,
+                hidden_dim=hidden_dim,
+                mlp_dim=mlp_dim,
+                num_classes=num_classes
+            )
+
+        else:
+            raise NotImplementedError
+
+    def forward(self, x):
+        """
+        Inputs:
+            x - Tensor representing the image of shape [B, C, H, W]
+            patch_size - Number of pixels per dimension of the patches (integer)
+            flatten_channels - If True, the patches will be returned in a flattened format
+                               as a feature vector instead of a image grid.
+        """
+
+        out = self.model(x)
+        return out
+
+
+
+'''
 def img_to_patch(x, patch_size, flatten_channels=True):
     """
     Inputs:
@@ -65,3 +120,4 @@ class VisionTransformer(nn.Module):
         cls = x[0]
         out = self.mlp_head(cls)
         return out
+'''

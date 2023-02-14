@@ -1,32 +1,40 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from models.vit_model import VisionTransformer
-from models.efficientnet_model import EfficientNet
+
+from models.vit_model import VisionTransformerModule
+from models.efficientnet_model import EfficientNetModule
 from models.convnext_model import ConvNext
 from mlp_mixer_pytorch import MLPMixer
+from models.cnn_model import CNNNet
+from models.swin_transformer_model import SwinTransformerModule
+from utils import return_optimizer, return_lr_scheduler
 
 import pytorch_lightning as pl
 
-# model import
-from utils import return_optimizer, return_lr_scheduler
 
 class BaseModule(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
         self.args = args
 
-        if args.model_name == 'vit':
-            self.model = VisionTransformer(**self.args.vit, **self.args.model)
+        if args.model_name in ['vit_b_16', 'vit_l_16', 'vit_h_14', 'vit_30_16']:
+            self.model = VisionTransformerModule(model_name=args.model_name, **self.args.model)
 
-        elif args.model_name in ['efficientnet_b0', 'efficientnet_b1', 'efficientnet_b2']:
-            self.model = EfficientNet(model_name=args.model_name, **self.args.model)
+        elif args.model_name in ['efficientnet_b0', 'efficientnet_b1', 'efficientnet_b2', 'efficientnet_extra']:
+            self.model = EfficientNetModule(model_name=args.model_name, **self.args.model)
 
-        elif args.model_name in ['convnext_tiny', 'convnext_small', 'convnext_base']:
+        elif args.model_name in ['convnext_tiny', 'convnext_small', 'convnext_base', 'convnext_large', 'convnext_extra']:
             self.model = ConvNext(model_name=args.model_name, **self.args.model)
 
         elif args.model_name == 'mlp':
             self.model = MLPMixer(**self.args.mlp, **self.args.model)
+
+        elif args.model_name == 'cnn':
+            self.model = CNNNet(model_name=args.model_name, **self.args.model)
+
+        elif args.model_name in ['swin_t', 'swin_s', 'swin_b', 'swin_extra']:
+            self.model = SwinTransformerModule(model_name=args.model_name, **self.args.model)
 
         else:
             self.model = None

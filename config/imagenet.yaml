@@ -23,8 +23,9 @@ vit:
   dropout: 0.2
 
 mlp:
-  image_size: 256
+  image_size: 224
   channels: 3
   patch_size: 16
-  dim: 512
-  depth: 12
+  dim: 2048
+  depth: 60
+  expansion_factor: 10
