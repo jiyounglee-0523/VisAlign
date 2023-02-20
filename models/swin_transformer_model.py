@@ -2,45 +2,66 @@ import torch
 from torch import nn
 import torchvision
 from torchvision.models import swin_t, swin_s, swin_b
+from torchvision.models import Swin_B_Weights
 from torchvision.models.swin_transformer import SwinTransformer
 
 
 class SwinTransformerModule(nn.Module):
     def __init__(self,
                  model_name,
-                 num_classes
+                 num_classes,
+                 pretrained_weights,
+                 freeze_weights,
                  ):
         super().__init__()
 
-        if model_name == 'swin_t':
-            self.model = swin_t(num_classes=num_classes)
+        if pretrained_weights is True:
+            self.model = swin_b(weights=Swin_B_Weights.DEFAULT)
 
-        elif model_name == 'swin_s':
-            self.model = swin_s(num_classes=num_classes)
+            # change the last layer to match the num_classes
+            self.model.head = nn.Linear(1024, num_classes, bias=True)
 
-        elif model_name == 'swin_b':
-            self.model = swin_b(num_classes=num_classes)
+            # option to freeze weights:
+            if freeze_weights is True:
+                for name, param in self.model.named_parameters():
+                    if name.split('.')[0] != 'head':
+                        param.requires_grad = False
 
-        elif model_name == 'swin_extra':
-            patch_size = [4, 4]
-            embed_dim = 256
-            depths = [2, 2, 15, 2]
-            num_heads = [4, 8, 16, 32]
-            window_size = [7, 7]
-            stochastic_depth_prob = 0.5
 
-            self.model = SwinTransformer(
-                patch_size=patch_size,
-                embed_dim=embed_dim,
-                depths=depths,
-                num_heads=num_heads,
-                window_size=window_size,
-                stochastic_depth_prob=stochastic_depth_prob,
-                num_classes=num_classes
-            )
+        elif pretrained_weights is False:
+            if model_name == 'swin_t':
+                self.model = swin_t(num_classes=num_classes)
+
+            elif model_name == 'swin_s':
+                self.model = swin_s(num_classes=num_classes)
+
+            elif model_name == 'swin_b':
+                self.model = swin_b(num_classes=num_classes)
+
+            elif model_name == 'swin_extra':
+                patch_size = [4, 4]
+                embed_dim = 256
+                depths = [2, 2, 15, 2]
+                num_heads = [4, 8, 16, 32]
+                window_size = [7, 7]
+                stochastic_depth_prob = 0.5
+
+                self.model = SwinTransformer(
+                    patch_size=patch_size,
+                    embed_dim=embed_dim,
+                    depths=depths,
+                    num_heads=num_heads,
+                    window_size=window_size,
+                    stochastic_depth_prob=stochastic_depth_prob,
+                    num_classes=num_classes
+                )
+
+            else:
+                raise NotImplementedError
 
         else:
             raise NotImplementedError
+
 
     def forward(self, x):
         '''
