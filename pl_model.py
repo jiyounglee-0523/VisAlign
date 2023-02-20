@@ -8,6 +8,7 @@ from models.convnext_model import ConvNext
 from mlp_mixer_pytorch import MLPMixer
 from models.cnn_model import CNNNet
 from models.swin_transformer_model import SwinTransformerModule
+from models.resnext import ResNextModule
 from utils import return_optimizer, return_lr_scheduler
 
 import pytorch_lightning as pl
@@ -35,6 +36,9 @@ class BaseModule(pl.LightningModule):
 
         elif args.model_name in ['swin_t', 'swin_s', 'swin_b', 'swin_extra']:
             self.model = SwinTransformerModule(model_name=args.model_name, **self.args.model)
+
+        elif args.model_name in ['resnext50_32x4d', 'resnext101_32x8d', 'resnext101_64x4d', 'resnext_extra']:
+            self.model = ResNextModule(model_name=args.model_name, **self.args.model)
 
         else:
             self.model = None
