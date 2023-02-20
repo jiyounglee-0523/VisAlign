@@ -2,26 +2,50 @@ import torch
 from torch import nn
 import torchvision
 from torchvision.models import resnext50_32x4d, resnext101_32x8d, resnext101_64x4d
+from torchvision.models import ResNeXt101_32X8D_Weights
 from torchvision.models.resnet import Bottleneck, ResNet
 
 class ResNextModule(nn.Module):
     def __init__(self,
                  model_name,
-                 num_classes
+                 num_classes,
+                 pretrained_weights,
+                 freeze_weights,
                  ):
         super().__init__()
 
-        if model_name == 'resnext50_32x4d':
-            self.model = resnext50_32x4d(num_classes=num_classes)
+        if pretrained_weights is True:
+            self.model = resnext101_32x8d(weights=ResNeXt101_32X8D_Weights.DEFAULT)
 
-        elif model_name == 'resnext101_32x8d':
-            self.model = resnext101_32x8d(num_classes=num_classes)
+            # change the last layer to match num_classes
+            self.model.fc = nn.Linear(2048, num_classes, bias=True)
 
-        elif model_name == 'resnext101_64x4d':
-            self.model = resnext101_64x4d(num_classes=num_classes)
+            # option to freeze weights
+            if freeze_weights is True:
+                for name, param in self.model.named_parameters():
+                    if name.split('.')[0] != 'fc':
+                        param.requires_grad = False
 
-        elif model_name == 'resnext_extra':
-            self.model = ResNet(block=Bottleneck, layers=[3, 4, 25, 3], num_classes=num_classes, groups=48, width_per_group=16)
+
+        elif pretrained_weights is False:
+            if model_name == 'resnext50_32x4d':
+                self.model = resnext50_32x4d(num_classes=num_classes)
+
+            elif model_name == 'resnext101_32x8d':
+                self.model = resnext101_32x8d(num_classes=num_classes)
+
+            elif model_name == 'resnext101_64x4d':
+                self.model = resnext101_64x4d(num_classes=num_classes)
+
+            elif model_name == 'resnext_extra':
+                self.model = ResNet(block=Bottleneck, layers=[3, 4, 25, 3], num_classes=num_classes, groups=48, width_per_group=16)
+
+            else:
+                raise NotImplementedError
+
+        else:
+            raise NotImplementedError
+
 
     def forward(self, x):
         """

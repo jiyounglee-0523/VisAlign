@@ -23,6 +23,8 @@ dataset:
 
 model:
   num_classes: 10
+  pretrained_weights: False
+  freeze_weights: False
 
 vit:
   embed_dim: 256
