@@ -48,7 +48,7 @@ def accimage_loader(path):
         return pil_loader(path)
 
 def return_filename(label):
-    assert label in ['zebra', 'orangutan', 'hippo', 'elephant', 'tiger', 'camel', 'polar_bear', 'giraffe'], "label out of range!"
+    assert label in ['zebra', 'gorilla', 'hippo', 'elephant', 'tiger', 'camel', 'giraffe', 'bear', 'human', 'kangaroo', 'rhino'], "label out of range!"
     filename = list()
 
     if label == 'zebra':
@@ -70,16 +70,24 @@ def return_filename(label):
     return filename
 
 def return_image_list(label):
-    if label == 'giraffe':
-        valid_image_list = os.listdir('/home/edlab/jylee/RELIABLE/data/animal/giraffe/data/test')
-    else:
-        try:
-            with open(os.path.join('/home/edlab/jylee/RELIABLE/data/clean_imagenet', f'{label}.txt'), 'r') as f:
-                valid_image_list = f.read().split('\n')
-                valid_image_list = valid_image_list[:-1]   # remove last empty filename
-        except FileNotFoundError:
-            print(f'There is no file named {label}.txt in clean imagenet!')
-            raise FileNotFoundError
+
+    valid_image_list = list()
+
+    try:
+        valid_image_list.extend(os.listdir(f'/home/edlab/jylee/RELIABLE/data/animal/{label}/data/test'))
+    except FileNotFoundError:
+        pass
+
+    try:
+        with open(os.path.join('/home/edlab/jylee/RELIABLE/data/clean_imagenet', f'{label}.txt'), 'r') as f:
+            image_list = f.read().split('\n')
+            image_list = image_list[:-1]
+        valid_image_list.extend(image_list)
+    except FileNotFoundError:
+        pass
+
+    if len(valid_image_list) == 0:
+        raise FileNotFoundError(f'{label} does not have any images')
 
     return valid_image_list
 
@@ -96,15 +104,17 @@ def generate_sample(image_path, save_path, label, corruption):
 
     for severity in range(1, 11):
         image_name = image_names[severity-1]
-        if label != 'giraffe':
+
+        if image_name[:14] == "ILSVRC2012_val":   # if the image is from ImageNet
             img = default_loader(os.path.join(image_path, image_name))
             # cropping
             bbox = bounding_box(image_name, label)
             img = img.crop(bbox)
 
-        elif label == 'giraffe':  # skip cropping because there is no bounding box for giraffe dataset
-            img = default_loader(os.path.join('/home/edlab/jylee/RELIABLE/data/animal/giraffe/data/test', image_name))
-        transform = trn.Compose([trn.Resize(256), trn.CenterCrop(224), trn.Resize(224)])
+        else:  # skip cropping because there is no bounding box for images.cv dataset
+            img = default_loader(os.path.join(f'/home/edlab/jylee/RELIABLE/data/animal/{label}/data/test', image_name))
+
+        transform = trn.Compose([trn.Resize(256)])
 
         img = transform(img)
         corrupted_img = corruption(img, severity=severity)
@@ -124,7 +134,7 @@ def generate_samples(image_path, save_path, number_of_samples_per_case):
                         brightness, jpeg_compression, pixelate, elastic_transform]
 
 
-    label_lists = ['zebra', 'orangutan', 'hippo', 'elephant', 'tiger', 'camel', 'giraffe', 'polar_bear']
+    label_lists = ['zebra', 'gorilla', 'hippo', 'elephant', 'tiger', 'camel', 'giraffe', 'bear', 'kangaroo', 'rhino', 'human']
 
     print(f'Total number of generated corrupted samples is {number_of_samples_per_case * (len(corruption_lists)+1) * len(label_lists) * 10}')
 
