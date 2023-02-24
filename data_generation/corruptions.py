@@ -366,14 +366,14 @@ def cropping_fn(resize):
     return transforms
 
 def cropping(image_path, image_name, label, resize):
-    if label != 'giraffe':
+    if image_name[:14] == "ILSVRC2012_val":  # if the image is from ImageNet
         bbox = bounding_box(image_name, label)
 
         img = Image.open(os.path.join(image_path, image_name))
         img = img.crop(bbox)
 
-    elif label == 'giraffe':
-        img = Image.open(os.path.join('/home/edlab/jylee/RELIABLE/data/animal/giraffe/data/test', image_name))
+    else:
+        img = Image.open(os.path.join(f'/home/edlab/jylee/RELIABLE/data/animal/{label}/data/test', image_name))
 
     transforms = cropping_fn(resize)
 
