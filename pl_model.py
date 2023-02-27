@@ -6,6 +6,7 @@ from models.vit_model import VisionTransformerModule
 from models.efficientnet_model import EfficientNetModule
 from models.convnext_model import ConvNext
 from mlp_mixer_pytorch import MLPMixer
+import timm
 from models.cnn_model import CNNNet
 from models.swin_transformer_model import SwinTransformerModule
 from models.resnext import ResNextModule
@@ -27,6 +28,9 @@ class BaseModule(pl.LightningModule):
 
         elif args.model_name in ['convnext_tiny', 'convnext_small', 'convnext_base', 'convnext_large', 'convnext_extra']:
             self.model = ConvNext(model_name=args.model_name, **self.args.model)
+
+        elif args.model_name in ['mixer_s16_224', 'mixer_s32_224', 'mixer_b16_224', 'mixer_b32_224', 'mixer_l16_224', 'mixer_l32_224']:
+            self.model = timm.create_model(model_name=args.model_name, pretrained=self.args.model['pretrained_weights'])
 
         elif args.model_name == 'mlp':
             self.model = MLPMixer(**self.args.mlp, **self.args.model)
