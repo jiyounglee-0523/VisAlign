@@ -86,6 +86,17 @@ def return_image_list(label):
     except FileNotFoundError:
         pass
 
+    if label == 'human':
+        with open('/home/data_storage/CelebA/celeba/list_eval_partition.txt', 'r') as f:
+            image_list = f.read().split('\n')
+
+        # filter only test set
+        image_list = [i.split(' ')[0] for i in image_list[:-1] if i.split(' ')[1] == '2']
+        valid_image_list.extend(image_list)
+
+        image_list = os.listdir('/home/edlab/jylee/RELIABLE/data/LSP/test')
+        valid_image_list.extend(image_list)
+
     if len(valid_image_list) == 0:
         raise FileNotFoundError(f'{label} does not have any images')
 
@@ -112,9 +123,17 @@ def generate_sample(image_path, save_path, label, corruption):
             img = img.crop(bbox)
 
         else:  # skip cropping because there is no bounding box for images.cv dataset
-            img = default_loader(os.path.join(f'/home/edlab/jylee/RELIABLE/data/animal/{label}/data/test', image_name))
+            try:
+                img = default_loader(os.path.join(f'/home/edlab/jylee/RELIABLE/data/animal/{label}/data/test', image_name))
 
-        transform = trn.Compose([trn.Resize(256)])
+            except FileNotFoundError:
+                try:
+                    img = default_loader(os.path.join('/home/edlab/jylee/RELIABLE/data/LSP/test', image_name))
+
+                except FileNotFoundError:
+                    img = default_loader(os.path.join('/home/data_storage/CelebA/celeba/img_align_celeba', image_name))
+
+        transform = trn.Compose([trn.Resize((256, 256))])
 
         img = transform(img)
         corrupted_img = corruption(img, severity=severity)
@@ -124,7 +143,7 @@ def generate_sample(image_path, save_path, label, corruption):
 
 
 def save_image(corrupted_sample, save_path, image_name, label, corruption, severity):
-    Image.fromarray(np.uint8(corrupted_sample)).save(os.path.join(save_path, f'{image_name[:-5]}-{label}-{corruption}-{severity}.jpg'), quality=85, optimize=True)
+    Image.fromarray(np.uint8(corrupted_sample)).save(os.path.join(save_path, f"{image_name.split('.')[0]}-{label}-{corruption}-{severity}.jpg"), quality=85, optimize=True)
 
 
 
@@ -133,8 +152,7 @@ def generate_samples(image_path, save_path, number_of_samples_per_case):
     corruption_lists = [gaussian_noise, shot_noise, impulse_noise, glass_blur, defocus_blur, motion_blur, zoom_blur, fog, frost, snow, contrast,
                         brightness, jpeg_compression, pixelate, elastic_transform]
 
-
-    label_lists = ['zebra', 'gorilla', 'hippo', 'elephant', 'tiger', 'camel', 'giraffe', 'bear', 'kangaroo', 'rhino', 'human']
+    label_lists = ['zebra', 'gorilla', 'elephant', 'tiger', 'camel', 'giraffe', 'bear', 'kangaroo', 'rhino', 'human']
 
     print(f'Total number of generated corrupted samples is {number_of_samples_per_case * (len(corruption_lists)+1) * len(label_lists) * 10}')
 
@@ -143,7 +161,6 @@ def generate_samples(image_path, save_path, number_of_samples_per_case):
         for corruption in corruption_lists:
             for _ in range(number_of_samples_per_case):
                 generate_sample(image_path, save_path, label, corruption)
-
 
     print('cropping')
     for label in tqdm(label_lists):
