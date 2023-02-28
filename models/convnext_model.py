@@ -63,7 +63,6 @@ class ConvNext(nn.Module):
         else:
             raise NotImplementedError
 
-
     def forward(self, x):
         """
         Inputs:
