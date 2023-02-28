@@ -205,7 +205,7 @@ def fog(x, severity=1):
 
     x = np.array(x) / 255.
     max_val = x.max()
-    x += c[0] * plasma_fractal(wibbledecay=c[1])[:224, :224][..., np.newaxis]
+    x += c[0] * plasma_fractal(wibbledecay=c[1])[:256, :256][..., np.newaxis]
     return np.clip(x * max_val / (max_val + c[0]), 0, 1) * 255
 
 def frost(x, severity=1):
@@ -224,8 +224,8 @@ def frost(x, severity=1):
     filename = ['frost1.png', 'frost2.png', 'frost3.png', 'frost4.jpg', 'frost5.jpg', 'frost6.jpg'][idx]
     frost = cv2.imread(os.path.join('/home/jylee/RELIABILITY/reliability/data_generation', filename))
     # randomly crop and convert to rgb
-    x_start, y_start = np.random.randint(0, frost.shape[0] - 224), np.random.randint(0, frost.shape[1] - 224)
-    frost = frost[x_start:x_start + 224, y_start:y_start + 224][..., [2, 1, 0]]
+    x_start, y_start = np.random.randint(0, frost.shape[0] - 256), np.random.randint(0, frost.shape[1] - 256)
+    frost = frost[x_start:x_start + 256, y_start:y_start + 256][..., [2, 1, 0]]
 
     return np.clip(c[0] * np.array(x) + c[1] * frost, 0, 255)
 
@@ -259,7 +259,7 @@ def snow(x, severity=1):
                               cv2.IMREAD_UNCHANGED) / 255.
     snow_layer = snow_layer[..., np.newaxis]
 
-    x = c[6] * x + (1 - c[6]) * np.maximum(x, cv2.cvtColor(x, cv2.COLOR_RGB2GRAY).reshape(224, 224, 1) * 1.5 + 0.5)
+    x = c[6] * x + (1 - c[6]) * np.maximum(x, cv2.cvtColor(x, cv2.COLOR_RGB2GRAY).reshape(256, 256, 1) * 1.5 + 0.5)
     return np.clip(x + snow_layer + np.rot90(snow_layer, k=2), 0, 1) * 255
 
 def contrast(x, severity=1):
@@ -361,7 +361,7 @@ def cropping_fn(resize):
     transforms = trn.Compose([
         torchvision.transforms.Resize(335),
         torchvision.transforms.CenterCrop(resize),
-        torchvision.transforms.Resize(224)
+        torchvision.transforms.Resize(256),
     ])
     return transforms
 
@@ -373,7 +373,16 @@ def cropping(image_path, image_name, label, resize):
         img = img.crop(bbox)
 
     else:
-        img = Image.open(os.path.join(f'/home/edlab/jylee/RELIABLE/data/animal/{label}/data/test', image_name))
+        try:
+            img = Image.open(os.path.join(f'/home/edlab/jylee/RELIABLE/data/animal/{label}/data/test', image_name))
+
+        except FileNotFoundError:
+            try:
+                img = Image.open(os.path.join('/home/edlab/jylee/RELIABLE/data/LSP/test', image_name))
+
+            except FileNotFoundError:
+                img = Image.open(os.path.join('/home/data_storage/CelebA/celeba/img_align_celeba', image_name))
+
 
     transforms = cropping_fn(resize)
 

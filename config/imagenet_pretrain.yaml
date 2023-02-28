@@ -4,8 +4,8 @@ trainer:
   lr_scheduler: 'ReduceLROnPlateau'
 
 dataset:
-  name: 'imagenet'
-  batch_size: 4
+  name: 'imagenet_pretrain'
+  batch_size: 16
   dataloader_num_workers: 8
   train:
     label_path: '/home/edlab/jylee/RELIABLE/data/final_dataset/final_train'
@@ -23,7 +23,7 @@ dataset:
     lsp_path: '/home/edlab/jylee/RELIABLE/data/LSP/train'
 
 model:
-  num_classes: 10
+  num_classes: 1000
   pretrained_weights: False
   freeze_weights: False
 

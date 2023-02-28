@@ -60,7 +60,6 @@ class EfficientNetModule(nn.Module):
             else:
                 raise NotImplementedError
 
-
         else:
             raise NotImplementedError
 

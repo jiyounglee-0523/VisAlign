@@ -6,6 +6,7 @@ from pytorch_lightning.strategies import DDPStrategy
 from pl_model import BaseModule
 
 from dataset.imagenet import ImageNetModule
+from dataset.imagenet_pretrain import ImageNetPretrainModule
 
 import os
 import argparse
@@ -95,7 +96,10 @@ def main():
     
 
     # Call Dataset
-    dataloader = ImageNetModule(args)
+    if args.dataset['name'] == 'imagenet_pretrain':
+        dataloader = ImageNetPretrainModule(args)
+    else:
+        dataloader = ImageNetModule(args)
 
     # Call Model
     model = BaseModule(args)
