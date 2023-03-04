@@ -29,7 +29,7 @@ class MLPMixerModule(nn.Module):
 
         elif pretrained_weights is False:
             if model_name == 'mlp':
-                self.model = MLPMixer(**args.mlp, **args.model)
+                self.model = MLPMixer(num_classes=args.model['num_classes'], **args.mlp)
             else:
                 self.model = timm.create_model(model_name=model_name, pretrained=False)
 
