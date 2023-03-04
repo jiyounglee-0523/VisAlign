@@ -6,7 +6,6 @@ from models.vit_model import VisionTransformerModule
 from models.efficientnet_model import EfficientNetModule
 from models.convnext_model import ConvNext
 from models.mlpmixer_model import MLPMixerModule
-import timm
 from models.cnn_model import CNNNet
 from models.swin_transformer_model import SwinTransformerModule
 from models.resnext import ResNextModule

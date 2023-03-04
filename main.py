@@ -72,6 +72,7 @@ def main():
     parser.add_argument('--n_gpus', default=1, type=int)
     parser.add_argument('--model_name', type=str)
     parser.add_argument('--wandb_run_name', type=str)
+    parser.add_argument('--batch_size', default=16, type=int)
 
     args = parser.parse_args()
 
@@ -81,6 +82,9 @@ def main():
         config = yaml.safe_load(f)
     for k, v in config.items():
         args.__setattr__(k, v)
+
+    # change batch size argument
+    args.dataset['batch_size'] = args.batch_size
 
     # Function for setting the seed
     pl.seed_everything(args.seed)
