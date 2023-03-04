@@ -60,25 +60,60 @@ def return_image_list():
     # load ImageNet validation samples
     with open('/home/data_storage/imagenet/valid.txt', 'r') as f:
         valid_samples = f.read().split('\n')
+        valid_samples = valid_samples[:-1]
+
+    valid_samples = {v.split(' ')[0]: v.split(' ')[1][:9] for v in valid_samples}
 
     return valid_samples
 
 
-def filter_image(valid_samples, metadata, label):
-    wordnet_label = return_wordnet_label(label)
+def filter_image(valid_image_list, metadata, label):
+    valid_samples = list()
 
     # filter clean images
-    with open(os.path.join('/home/edlab/jylee/RELIABLE/data/clean_imagenet', f'{label}.txt'), 'r') as f:
-        clean_image_list = f.read().split('\n')
-        clean_image_list = clean_image_list[:-1]
+    if label in ['bear', 'elephant', 'tiger', 'camel', 'gorilla', 'kangaroo', 'zebra']:
+        with open(os.path.join('/home/edlab/jylee/RELIABLE/data/clean_imagenet', f'{label}.txt'), 'r') as f:
+            clean_image_list = f.read().split('\n')
+            clean_image_list = clean_image_list[:-1]
 
-    # filter clean images
-    valid_samples = [v for v in valid_samples if v.split(' ')[0] in clean_image_list]
+        valid_samples.extend(clean_image_list)
 
-    # filter samples
-    valid_samples = [(v.split(' ')[0], int(metadata[v.split(' ')[1][:9]])) for v in valid_samples if v.split(' ')[1][:9] in wordnet_label]
+    if label in ['camel', 'giraffe', 'gorilla', 'kangaroo', 'rhino']:
+        clean_image_list = os.listdir(f'/home/edlab/jylee/RELIABLE/data/animal/{label}/data/test')
+        valid_samples.extend(clean_image_list)
 
-    return valid_samples
+    elif label == 'human':
+        with open('/home/data_storage/CelebA/celeba/list_eval_partition.txt', 'r') as f:
+            image_list = f.read().split('\n')
+
+        # filter only test set
+        image_list = [i.split(' ')[0] for i in image_list[:-1] if i.split(' ')[1] == '2']
+        valid_samples.extend(image_list)
+
+        image_list = os.listdir('/home/edlab/jylee/RELIABLE/data/LSP/test')
+        valid_samples.extend(image_list)
+
+    if len(valid_samples) == 0:
+        raise FileNotFoundError(f'{label} does not have any images')
+
+    final_valid_samples = list()
+
+    for v in valid_samples:
+        if v[:15] == 'ILSVRC2012_val_':  # if the image is from imagenet
+            final_valid_samples.append((v, int(metadata[valid_image_list[v]])))
+
+        elif label in ['camel', 'gorilla', 'kangaroo']:
+            if label == 'camel':
+                final_valid_samples.append((v, int(metadata['n02437312'])))
+            elif label == 'gorilla':
+                final_valid_samples.append((v, int(metadata['n02480855'])))
+            elif label == 'kangaroo':
+                final_valid_samples.append((v, int(metadata['n01877812'])))
+
+        elif label in ['giraffe', 'rhino', 'human']:
+            final_valid_samples.append((v, int(-1)))
+
+    return final_valid_samples
 
 
 def inverse_normalize(input, pre_fn):
@@ -138,12 +173,12 @@ def fgsm_attack(image, epsilon, data_grad):
 
 
 def save_image_fn(perturbed_data, save_path, image_name, label, epsilon, model_name):
-    save_image(perturbed_data, os.path.join(save_path, f'{image_name}-{label}-{model_name}-{int(epsilon*100)}.jpg'))
+    save_image(perturbed_data, os.path.join(save_path, f"{image_name.split('.')[0]}-{label}-{model_name}-{int(epsilon*100)}.jpg"))
 
 
-def generate_adversarial_sample(image_path, save_path, label, epsilon, model_name, valid_samples, metadata, number_of_samples_per_case):
+def generate_adversarial_sample(image_path, save_path, label, epsilon, model_name, valid_image_list, metadata, number_of_samples_per_case):
     # filter corresponding samples
-    sample_list = filter_image(valid_samples, metadata, label)
+    sample_list = filter_image(valid_image_list, metadata, label)
     random.shuffle(sample_list)  # random shuffle test samples
 
     # load model and preprocessing function
@@ -153,12 +188,25 @@ def generate_adversarial_sample(image_path, save_path, label, epsilon, model_nam
 
     for (image_name, target) in sample_list:
         target = torch.tensor([target]).cuda()
-        image = pre_fn(Image.open(os.path.join(image_path, image_name)).convert('RGB'))
+        if image_name[:15] == 'ILSVRC2012_val_':
+            image = pre_fn(Image.open(os.path.join(image_path, image_name)).convert('RGB'))
+        else:
+            try:
+                image = pre_fn(Image.open(f'/home/edlab/jylee/RELIABLE/data/animal/{label}/data/test/{image_name}').convert('RGB'))
+            except FileNotFoundError:
+                try:
+                    image = pre_fn(Image.open(f'/home/data_storage/CelebA/celeba/img_align_celeba/{image_name}').convert('RGB'))
+                except FileNotFoundError:
+                    image = pre_fn(Image.open(f'/home/edlab/jylee/RELIABLE/data/LSP/test/{image_name}').convert('RGB'))
+
         image = image.unsqueeze(0).cuda()
         image.requires_grad = True
 
         # forward
         output = model(image)
+
+        if target.item() == -1:
+            target = output.argmax(dim=-1)
 
         loss = F.nll_loss(output, target)
         model.zero_grad()
@@ -207,7 +255,7 @@ def generate_samples(model, image_path, save_path, number_of_samples_per_case):
                     label=label,
                     epsilon=epsilon,
                     model_name=model_name,
-                    valid_samples=valid_samples,
+                    valid_image_list=valid_image_list,
                     metadata=metadata,
                     number_of_samples_per_case=number_of_samples_per_case,
                 )
@@ -225,6 +273,7 @@ def check_adversarial_samples(save_path):
     image_list = [image for image in image_list if image[:-3] == 'jpg']
 
     target_list = [int(metadata[valid_samples[image]]) for image in image_list]
+
 
     correct_prediction_list = []
 
@@ -278,8 +327,8 @@ def main():
     else:
         # generate sample
         generate_samples(args.model, args.image_path, args.save_path, args.number_of_samples_per_case)
-        print('Done Making Samples!')
-        check_adversarial_samples()
+        print('Done Making Samples! --> Proceed to Sanity Check')
+        # check_adversarial_samples()
 
 
 if __name__ == '__main__':
