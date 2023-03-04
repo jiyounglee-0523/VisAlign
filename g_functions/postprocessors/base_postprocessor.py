@@ -22,19 +22,20 @@ class BasePostProcessor():
         return pred, conf
 
     def inference(self, net: nn.Module, data_loader: DataLoader):
-        pred_list, conf_list, label_list = [], [], []
+        pred_list, conf_list, image_lists = [], [], []
 
-        for batch in data_loader:
-            data = batch['data'].cuda()
-            label = batch['label'].cuda()
+        for (image_name, image) in data_loader:
+            image_lists.extend(image_name.tolist())   # TODO: 확인하기
+            data = image.cuda()
+            # label = batch['label'].cuda()
             pred, conf = self.postprocess(net, data)
             for idx in range(len(data)):
                 pred_list.append(pred[idx].cpu().tolist())
                 conf_list.append(conf[idx].cpu().tolist())
-                label_list.append(label[idx].cpu().tolist())
+                # label_list.append(label[idx].cpu().tolist())
 
         pred_list = np.array(pred_list, dtype=int)
         conf_list = np.array(conf_list)
-        label_list = np.array(label_list, dtype=int)
+        # label_list = np.array(label_list, dtype=int)
 
-        return pred_list, conf_list, label_list
+        return pred_list, conf_list, image_lists

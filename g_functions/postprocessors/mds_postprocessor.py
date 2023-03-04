@@ -63,7 +63,7 @@ class MDSPostProcessor(BasePostProcessor):
             # get out-of-distribution scores
             for layer_index in range(self.num_layer):
                 M_out = get_Mahalanobis_scores(
-                    net, ood_loader_dict['val'], self.num_classes,
+                    net, ood_loader_dict, self.num_classes,
                     self.feature_mean, self.feature_prec,
                     self.transform_matrix, layer_index, self.feature_type_list,
                     self.magnitude
