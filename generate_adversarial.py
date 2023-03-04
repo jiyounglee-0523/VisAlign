@@ -21,8 +21,9 @@ import random
 import json
 from PIL import Image
 
+# unused
 def return_wordnet_label(label):
-    assert label in ['tiger', 'zebra', 'camel', 'elephant', 'hippo', 'orangutan', 'polar_bear', 'kangaroo'],  'label outside of the candidates'
+    assert label in ['tiger', 'zebra', 'camel', 'elephant', 'bear', 'kangaroo', 'giraffe', 'rhino', 'human', 'gorilla'],  'label outside of the candidates'
 
     if label == 'tiger':
         wordnet_label = ['n02129604']
@@ -185,13 +186,12 @@ def generate_adversarial_sample(image_path, save_path, label, epsilon, model_nam
             break
 
 def generate_samples(model, image_path, save_path, number_of_samples_per_case):
-
     # change this!
-    label_list = ['tiger', 'zebra', 'camel', 'elephant', 'hippo', 'orangutan', 'polar_bear', 'kangaroo']
+    label_list = ['tiger', 'zebra', 'camel', 'elephant', 'bear', 'kangaroo', 'giraffe', 'rhino', 'human', 'gorilla']
     epsilon_list = [.005, .01, .015, .02, .025, .03]
 
     metadata = return_metadata()
-    valid_samples = return_image_list()
+    valid_image_list = return_image_list()
 
     if model == 'all':
         model_list = ['resnet50', 'convnext_base', 'densenet121', 'efficientnet_b0', 'resnext50_32x4d', 'vgg16', 'wide_resnet50_2']

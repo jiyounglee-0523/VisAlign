@@ -63,8 +63,8 @@ class ImageNet(Dataset):
         self.data = list()
         self.target = list()
 
-        label_file_list = ['tiger.txt', 'zebra.txt', 'camel.txt', 'giraffe.txt', 'elephant.txt', 'hippo.txt',
-                           'orangutan.txt', 'polar_bear.txt', 'kangaroo.txt', 'human.txt']
+        label_file_list = ['tiger.txt', 'zebra.txt', 'camel.txt', 'giraffe.txt', 'elephant.txt', 'rhino.txt',
+                           'gorilla.txt', 'bear.txt', 'kangaroo.txt', 'human.txt']
 
         if is_training is True:
             for i, label_file in enumerate(label_file_list):
@@ -72,10 +72,10 @@ class ImageNet(Dataset):
                     image_names = f.read().split('\n')
 
                 self.data.extend(image_names[:-1])
-                self.target.extend([i] * 550)
+                self.target.extend([i] * 500)
 
-            assert len(self.data) == 550 * 10
-            assert len(self.target) == 550 * 10
+            assert len(self.data) == 500 * 10
+            assert len(self.target) == 500 * 10
 
         elif is_training is False:
             for i, label_file in enumerate(label_file_list):
@@ -83,10 +83,10 @@ class ImageNet(Dataset):
                     image_names = f.read().split('\n')
 
                 self.data.extend(image_names[:-1])
-                self.target.extend([i] * 70)
+                self.target.extend([i] * 50)
 
-            assert len(self.data) == 70 * 10
-            assert len(self.target) == 70 * 10
+            assert len(self.data) == 50 * 10
+            assert len(self.target) == 50 * 10
 
     def __len__(self):
         return len(self.data)
@@ -105,6 +105,10 @@ class ImageNet(Dataset):
             path = self.dataset_path['kangaroo_path']
         elif data_source == 'lsp':
             path = self.dataset_path['lsp_path']
+        elif data_source == 'rhino':
+            path = self.dataset_path['rhino_path']
+        elif data_source == 'gorilla':
+            path = self.dataset_path['gorilla_path']
         else:
             print(data_source)
             raise NotImplementedError
