@@ -9,6 +9,7 @@ from models.mlpmixer_model import MLPMixerModule
 from models.cnn_model import CNNNet
 from models.swin_transformer_model import SwinTransformerModule
 from models.resnext import ResNextModule
+from models.densenet_model import DenseNetModule
 from utils import return_optimizer, return_lr_scheduler
 
 import pytorch_lightning as pl
@@ -39,6 +40,9 @@ class BaseModule(pl.LightningModule):
 
         elif args.model_name in ['resnext50_32x4d', 'resnext101_32x8d', 'resnext101_64x4d', 'resnext_extra']:
             self.model = ResNextModule(model_name=args.model_name, **self.args.model)
+
+        elif args.model_name in ['densenet121', 'densenet161', 'densenet169', 'densenet201', 'densenet_extra']:
+            self.model = DenseNetModule(model_name=args.model_name, **self.args.model)
 
         else:
             self.model = None

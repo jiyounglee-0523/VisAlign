@@ -5,61 +5,89 @@ from torchvision.models import vit_b_16, vit_l_16, vit_h_14, vit_l_32
 from torchvision.models import ViT_L_32_Weights
 from torchvision.models.vision_transformer import VisionTransformer
 
+from models.utils import Identity
+
 
 class VisionTransformerModule(nn.Module):
     def __init__(self,
                  model_name,
-                 num_classes,
-                 pretrained_weights,
-                 freeze_weights,
+                 is_ssl=False,
+                 num_classes=10,
+                 pretrained_weights=False,
+                 freeze_weights=False,
                  ):
         super().__init__()
 
-        if pretrained_weights is True:
-            self.model = vit_l_32(weights=ViT_L_32_Weights.DEFAULT)
+        if is_ssl is False:
+            if pretrained_weights is True:
+                self.model = vit_l_32(weights=ViT_L_32_Weights.DEFAULT)
 
-            # change the last layer to match num_classes
-            self.model.heads[0] = nn.Linear(1024, num_classes, bias=True)
+                # change the last layer to match num_classes
+                self.model.heads[0] = nn.Linear(1024, num_classes, bias=True)
 
-            # option to freeze weights
-            if freeze_weights is True:
-                for name, param in self.model.named_parameters():
-                    if name.split('.')[0] != 'heads':
-                        param.requires_grad = False
+                # option to freeze weights
+                if freeze_weights is True:
+                    for name, param in self.model.named_parameters():
+                        if name.split('.')[0] != 'heads':
+                            param.requires_grad = False
 
-        elif pretrained_weights is False:
-            if model_name == 'vit_b_16':
-                self.model = vit_b_16(num_classes=num_classes)
+            elif pretrained_weights is False:
+                if model_name == 'vit_b_16':
+                    self.model = vit_b_16(num_classes=num_classes)
 
-            elif model_name == 'vit_l_16':
-                self.model = vit_l_16(num_classes=num_classes)
+                elif model_name == 'vit_l_16':
+                    self.model = vit_l_16(num_classes=num_classes)
 
-            elif model_name == 'vit_h_14':
-                self.model = vit_h_14(num_classes=num_classes)
+                elif model_name == 'vit_h_14':
+                    self.model = vit_h_14(num_classes=num_classes)
 
-            elif model_name == 'vit_30_16':
-                image_size = 224
-                patch_size = 16
-                num_layers = 30
-                num_heads = 16
-                hidden_dim = 1024
-                mlp_dim = 4096
+                elif model_name == 'vit_30_16':
+                    image_size = 224
+                    patch_size = 16
+                    num_layers = 30
+                    num_heads = 16
+                    hidden_dim = 1024
+                    mlp_dim = 4096
 
-                self.model = VisionTransformer(
-                    image_size=image_size,
-                    patch_size=patch_size,
-                    num_layers=num_layers,
-                    num_heads=num_heads,
-                    hidden_dim=hidden_dim,
-                    mlp_dim=mlp_dim,
-                    num_classes=num_classes
-                )
+                    self.model = VisionTransformer(
+                        image_size=image_size,
+                        patch_size=patch_size,
+                        num_layers=num_layers,
+                        num_heads=num_heads,
+                        hidden_dim=hidden_dim,
+                        mlp_dim=mlp_dim,
+                        num_classes=num_classes
+                    )
+
+                else:
+                    raise NotImplementedError
 
             else:
                 raise NotImplementedError
 
-        else:
-            raise NotImplementedError
+        elif is_ssl is True:
+            image_size = 224
+            patch_size = 16
+            num_layers = 30
+            num_heads = 16
+            hidden_dim = 1024
+            mlp_dim = 4096
+
+            self.model = VisionTransformer(
+                image_size=image_size,
+                patch_size=patch_size,
+                num_layers=num_layers,
+                num_heads=num_heads,
+                hidden_dim=hidden_dim,
+                mlp_dim=mlp_dim,
+                num_classes=num_classes
+            )
+
+            # remove the last classifier
+            self.model.heads = Identity()
+            # remove the last layernorm
+            self.model.encoder = nn.Sequential(*list(self.model.encoder.children())[:-1])
+
 
     def forward(self, x):
         """
