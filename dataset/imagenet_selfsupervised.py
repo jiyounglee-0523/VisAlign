@@ -55,3 +55,36 @@ class ImageNetSelfSupervised(ImageNet):
         target = torch.LongTensor([self.target[item]])
 
         return image1, image2, target
+
+
+class ImageNetSSLModule(pl.LightningDataModule):
+    def __init__(self, args):
+        super().__init__()
+        self.args = args
+
+    def train_dataloader(self):
+        return DataLoader(
+            ImageNetSelfSupervised(self.args.dataset),
+            batch_size=self.args.dataset['batch_size'],
+            shuffle=True,
+            num_workers=self.args.dataset['dataloader_num_workers'],
+            pin_memory=True
+        )
+
+    def val_dataloader(self):
+        return DataLoader(
+            ImageNetSelfSupervised(self.args.dataset),
+            batch_size=self.args.dataset['batch_size'],
+            shuffle=False,
+            num_workers=self.args.dataset['dataloader_num_workers'],
+            pin_memory=True
+        )
+
+    def test_dataloader(self):
+        return DataLoader(
+            ImageNetSelfSupervised(self.args.dataset),
+            batch_size=self.args.dataset['batch_size'],
+            shuffle=False,
+            num_workers=self.args.dataset['dataloader_num_workers'],
+            pin_memory=True
+        )

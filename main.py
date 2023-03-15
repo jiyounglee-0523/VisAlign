@@ -7,6 +7,7 @@ from pl_model import BaseModule
 
 from dataset.imagenet import ImageNetModule
 from dataset.imagenet_pretrain import ImageNetPretrainModule
+from dataset.imagenet_selfsupervised import ImageNetSSLModule
 
 import os
 import argparse
@@ -73,6 +74,7 @@ def main():
     parser.add_argument('--model_name', type=str)
     parser.add_argument('--wandb_run_name', type=str)
     parser.add_argument('--batch_size', default=16, type=int)
+    parser.add_argument('--ssl', action='store_true')
 
     args = parser.parse_args()
 
@@ -100,10 +102,13 @@ def main():
     
 
     # Call Dataset
-    if args.dataset['name'] == 'imagenet_pretrain':
-        dataloader = ImageNetPretrainModule(args)
+    if args.ssl is True:
+        dataloader = ImageNetSSLModule(args)
     else:
-        dataloader = ImageNetModule(args)
+        if args.dataset['name'] == 'imagenet_pretrain':
+            dataloader = ImageNetPretrainModule(args)
+        else:
+            dataloader = ImageNetModule(args)
 
     # Call Model
     model = BaseModule(args)
