@@ -7,62 +7,85 @@ from torchvision.models.efficientnet import MBConvConfig, EfficientNet
 
 from functools import partial
 
+from models.utils import Identity
+
 class EfficientNetModule(nn.Module):
     def __init__(self,
                  model_name,
-                 num_classes,
-                 pretrained_weights,
-                 freeze_weights,
+                 is_ssl=False,
+                 num_classes=10,
+                 pretrained_weights=False,
+                 freeze_weights=False,
                  ):
         super().__init__()
 
-        if pretrained_weights is True:
-            self.model = efficientnet_b7(weights=EfficientNet_B7_Weights.DEFAULT)
+        if is_ssl is False:
+            if pretrained_weights is True:
+                self.model = efficientnet_b7(weights=EfficientNet_B7_Weights.DEFAULT)
 
-            # change the last layer to match num_classes
-            self.model.classifier[-1] = nn.Linear(2560, num_classes, bias=True)
+                # change the last layer to match num_classes
+                self.model.classifier[-1] = nn.Linear(2560, num_classes, bias=True)
 
-            # option to freeze weights
-            if freeze_weights is True:
-                for name, param in self.model.named_parameters():
-                    if name.split('.')[0] != 'classifier':
-                        param.requires_grad = False
+                # option to freeze weights
+                if freeze_weights is True:
+                    for name, param in self.model.named_parameters():
+                        if name.split('.')[0] != 'classifier':
+                            param.requires_grad = False
 
 
-        elif pretrained_weights is False:
+            elif pretrained_weights is False:
 
-            if model_name == 'efficientnet_b0':
-                self.model = efficientnet_b0(num_classes=num_classes)
+                if model_name == 'efficientnet_b0':
+                    self.model = efficientnet_b0(num_classes=num_classes)
 
-            elif model_name == 'efficientnet_b1':
-                self.model = efficientnet_b1(num_classes=num_classes)
+                elif model_name == 'efficientnet_b1':
+                    self.model = efficientnet_b1(num_classes=num_classes)
 
-            elif model_name == 'efficientnet_b2':
-                self.model = efficientnet_b2(num_classes=num_classes)
+                elif model_name == 'efficientnet_b2':
+                    self.model = efficientnet_b2(num_classes=num_classes)
 
-            elif model_name == 'efficientnet_extra':
-                bneck_conf = partial(MBConvConfig, width_mult=4.1, depth_mult=4.0)
+                elif model_name == 'efficientnet_extra':
+                    bneck_conf = partial(MBConvConfig, width_mult=4.1, depth_mult=4.0)
 
-                inverted_residual_setting = [
-                    bneck_conf(1, 3, 1, 32, 16, 1),
-                    bneck_conf(6, 3, 2, 16, 24, 2),
-                    bneck_conf(6, 5, 2, 24, 40, 2),
-                    bneck_conf(6, 3, 2, 40, 80, 3),
-                    bneck_conf(6, 5, 1, 80, 112, 3),
-                    bneck_conf(6, 5, 2, 112, 192, 4),
-                    bneck_conf(6, 3, 1, 192, 320, 1),
-                ]
+                    inverted_residual_setting = [
+                        bneck_conf(1, 3, 1, 32, 16, 1),
+                        bneck_conf(6, 3, 2, 16, 24, 2),
+                        bneck_conf(6, 5, 2, 24, 40, 2),
+                        bneck_conf(6, 3, 2, 40, 80, 3),
+                        bneck_conf(6, 5, 1, 80, 112, 3),
+                        bneck_conf(6, 5, 2, 112, 192, 4),
+                        bneck_conf(6, 3, 1, 192, 320, 1),
+                    ]
 
-                last_channel = None
+                    last_channel = None
 
-                self.model = EfficientNet(inverted_residual_setting, dropout=0.5, last_channel=last_channel, num_classes=10)
+                    self.model = EfficientNet(inverted_residual_setting, dropout=0.5, last_channel=last_channel, num_classes=10)
+
+                else:
+                    raise NotImplementedError
 
             else:
                 raise NotImplementedError
 
-        else:
-            raise NotImplementedError
+        elif is_ssl is True:
+            bneck_conf = partial(MBConvConfig, width_mult=4.1, depth_mult=4.0)
 
+            inverted_residual_setting = [
+                bneck_conf(1, 3, 1, 32, 16, 1),
+                bneck_conf(6, 3, 2, 16, 24, 2),
+                bneck_conf(6, 5, 2, 24, 40, 2),
+                bneck_conf(6, 3, 2, 40, 80, 3),
+                bneck_conf(6, 5, 1, 80, 112, 3),
+                bneck_conf(6, 5, 2, 112, 192, 4),
+                bneck_conf(6, 3, 1, 192, 320, 1),
+            ]
+
+            last_channel = None
+
+            self.model = EfficientNet(inverted_residual_setting, dropout=0.5, last_channel=last_channel, num_classes=10)
+
+            # remove the last classifier
+            self.model.classifier = Identity()
 
     def forward(self, x):
         """

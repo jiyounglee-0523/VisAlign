@@ -5,63 +5,85 @@ from torchvision.models import convnext_tiny, convnext_small, convnext_base, con
 from torchvision.models import ConvNeXt_Large_Weights
 from torchvision.models.convnext import ConvNeXt, CNBlockConfig
 
+from models.utils import Identity
+
 
 class ConvNext(nn.Module):
     def __init__(self,
                  model_name,
-                 num_classes,
-                 pretrained_weights,
-                 freeze_weights,
+                 is_ssl=False,
+                 num_classes=10,
+                 pretrained_weights=False,
+                 freeze_weights=False,
                  ):
         super().__init__()
 
-        if pretrained_weights is True:
-            self.model = convnext_large(weights=ConvNeXt_Large_Weights.DEFAULT)
+        if is_ssl is False:
+            if pretrained_weights is True:
+                self.model = convnext_large(weights=ConvNeXt_Large_Weights.DEFAULT)
 
-            # change the last layer to match num_classes
-            self.model.classifier[-1] = nn.Linear(1536, num_classes, bias=True)
+                # change the last layer to match num_classes
+                self.model.classifier[-1] = nn.Linear(1536, num_classes, bias=True)
 
-            # option to freeze weights
-            if freeze_weights is True:
-                for name, param in self.model.named_parameters():
-                    if name.split('.')[0] != 'classifier':
-                        param.requires_grad = False
+                # option to freeze weights
+                if freeze_weights is True:
+                    for name, param in self.model.named_parameters():
+                        if name.split('.')[0] != 'classifier':
+                            param.requires_grad = False
 
 
-        elif pretrained_weights is False:
+            elif pretrained_weights is False:
 
-            if model_name == 'convnext_tiny':
-                self.model = convnext_tiny(num_classes=num_classes)
+                if model_name == 'convnext_tiny':
+                    self.model = convnext_tiny(num_classes=num_classes)
 
-            elif model_name == 'convnext_small':
-                self.model = convnext_small(num_classes=num_classes)
+                elif model_name == 'convnext_small':
+                    self.model = convnext_small(num_classes=num_classes)
 
-            elif model_name == 'convnext_base':
-                self.model = convnext_base(num_classes=num_classes)
+                elif model_name == 'convnext_base':
+                    self.model = convnext_base(num_classes=num_classes)
 
-            elif model_name =='convnext_large':
-                self.model = convnext_large(num_classes=num_classes)
+                elif model_name =='convnext_large':
+                    self.model = convnext_large(num_classes=num_classes)
 
-            elif model_name == 'convnext_extra':
-                block_setting = [
-                    CNBlockConfig(192, 384, 3),
-                    CNBlockConfig(384, 768, 3),
-                    CNBlockConfig(768, 1536, 50),
-                    CNBlockConfig(1536, None, 3),
-                ]
+                elif model_name == 'convnext_extra':
+                    block_setting = [
+                        CNBlockConfig(192, 384, 3),
+                        CNBlockConfig(384, 768, 3),
+                        CNBlockConfig(768, 1536, 50),
+                        CNBlockConfig(1536, None, 3),
+                    ]
 
-                self.model = ConvNeXt(
-                    block_setting,
-                    stochastic_depth_prob=0.5,
-                    num_classes=num_classes,
-                )
+                    self.model = ConvNeXt(
+                        block_setting,
+                        stochastic_depth_prob=0.5,
+                        num_classes=num_classes,
+                    )
+
+                else:
+                    raise NotImplementedError
+
 
             else:
                 raise NotImplementedError
 
+        elif is_ssl is True:
+            block_setting = [
+                CNBlockConfig(192, 384, 3),
+                CNBlockConfig(384, 768, 3),
+                CNBlockConfig(768, 1536, 50),
+                CNBlockConfig(1536, None, 3),
+            ]
 
-        else:
-            raise NotImplementedError
+            self.model = ConvNeXt(
+                block_setting,
+                stochastic_depth_prob=0.5,
+                num_classes=num_classes,
+            )
+
+            # remove the last classifier
+            self.model.classifier = Identity()
+
 
     def forward(self, x):
         """
