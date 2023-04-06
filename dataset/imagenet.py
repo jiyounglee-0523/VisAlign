@@ -63,6 +63,12 @@ class ImageNet(Dataset):
         self.data = list()
         self.target = list()
 
+        num_classes = 10
+
+        # 1250 samples split by 9:1 ratio
+        train_size = 1125
+        test_size = 125
+
         label_file_list = ['tiger.txt', 'zebra.txt', 'camel.txt', 'giraffe.txt', 'elephant.txt', 'rhino.txt',
                            'gorilla.txt', 'bear.txt', 'kangaroo.txt', 'human.txt']
 
@@ -72,10 +78,10 @@ class ImageNet(Dataset):
                     image_names = f.read().split('\n')
 
                 self.data.extend(image_names[:-1])
-                self.target.extend([i] * 500)
+                self.target.extend([i] * train_size)
 
-            assert len(self.data) == 500 * 10
-            assert len(self.target) == 500 * 10
+            assert len(self.data) == train_size * num_classes
+            assert len(self.target) == train_size * num_classes
 
         elif is_training is False:
             for i, label_file in enumerate(label_file_list):
@@ -83,10 +89,10 @@ class ImageNet(Dataset):
                     image_names = f.read().split('\n')
 
                 self.data.extend(image_names[:-1])
-                self.target.extend([i] * 50)
+                self.target.extend([i] * test_size)
 
-            assert len(self.data) == 50 * 10
-            assert len(self.target) == 50 * 10
+            assert len(self.data) == test_size * num_classes
+            assert len(self.target) == test_size * num_classes
 
     def __len__(self):
         return len(self.data)
@@ -97,6 +103,8 @@ class ImageNet(Dataset):
         if data_source == 'imagenet':
             path = self.dataset_path['imagenet_path']
             path = os.path.join(path, image.split('_')[0])
+        elif data_source == 'imagenet21k':
+            path = self.dataset_path['imagenet21k_path']
         elif data_source == 'celeba':
             path = self.dataset_path['celeba_path']
         elif data_source == 'giraffe':
