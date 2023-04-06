@@ -81,6 +81,8 @@ class ConvNext(nn.Module):
                 num_classes=num_classes,
             )
 
+            self.hidden_dim = self.model.classifier[2].in_features
+
             # remove the last classifier
             self.model.classifier = Identity()
 

@@ -3,12 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from models.vit_model import VisionTransformerModule
-from models.efficientnet_model import EfficientNetModule
+from models.vit_model import VisionTransformerModule
 from models.convnext_model import ConvNext
 from models.mlpmixer_model import MLPMixerModule
-from models.cnn_model import CNNNet
 from models.swin_transformer_model import SwinTransformerModule
-from models.resnext import ResNextModule
+from models.densenet_model import DenseNetModule
 from utils import return_optimizer, return_lr_scheduler
 
 import pytorch_lightning as pl
@@ -18,28 +17,26 @@ class SSLBaseModule(pl.LightningModule):
         super().__init__()
         self.args = args
 
-        if args.model_name in ['vit_b_16', 'vit_l_16', 'vit_h_14', 'vit_30_16']:
+        if args.model_name == 'vit_30_16':
             self.model = VisionTransformerModule(model_name=args.model_name, is_ssl=True, **self.args.model)
 
-        elif args.model_name in ['efficientnet_b0', 'efficientnet_b1', 'efficientnet_b2', 'efficientnet_extra']:
-            self.model = EfficientNetModule(model_name=args.model_name, is_ssl=True, **self.args.model)
-
-        elif args.model_name in ['convnext_tiny', 'convnext_small', 'convnext_base', 'convnext_large',
-                                 'convnext_extra']:
+        elif args.model_name == 'convnext_extra':
             self.model = ConvNext(model_name=args.model_name, is_ssl=True, **self.args.model)
 
-        elif args.model_name in ['mixer_s16_224', 'mixer_s32_224', 'mixer_b16_224', 'mixer_b32_224', 'mixer_l16_224',
-                                 'mixer_l32_224', 'mlp']:
+        elif args.model_name == 'mlp':
             self.model = MLPMixerModule(args=args, model_name=args.model_name, is_ssl=True, **self.args.model)
 
-        elif args.model_name == 'cnn':
-            self.model = CNNNet(model_name=args.model_name, is_ssl=True, **self.args.model)
+        elif args.model_name == 'densenet_extra':
+            self.model = DenseNetModule(model_name=args.model_name, is_ssl=True, **self.args.model)
 
-        elif args.model_name in ['swin_t', 'swin_s', 'swin_b', 'swin_extra']:
+        elif args.model_name == 'swin_extra':
             self.model = SwinTransformerModule(model_name=args.model_name, is_ssl=True, **self.args.model)
 
-        elif args.model_name in ['resnext50_32x4d', 'resnext101_32x8d', 'resnext101_64x4d', 'resnext_extra']:
-            self.model = ResNextModule(model_name=args.model_name, is_ssl=True, **self.args.model)
+        # elif args.model_name == 'efficientnet_extra':
+        #     self.model = EfficientNetModule(model_name=args.model_name, is_ssl=True, **self.args.model)
+
+        # elif args.model_name in ['resnext50_32x4d', 'resnext101_32x8d', 'resnext101_64x4d', 'resnext_extra']:
+        #     self.model = ResNextModule(model_name=args.model_name, is_ssl=True, **self.args.model)
 
         else:
             self.model = None

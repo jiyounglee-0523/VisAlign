@@ -64,6 +64,8 @@ class DenseNetModule(nn.Module):
 
             self.model = DenseNet(growth_rate, block_config, num_init_features, num_classes=num_classes)
 
+            self.hidden_dim = self.model.classifier.in_features
+
             # remove the last classifier
             self.model.classifier = Identity()
             # remove the last batchnorm
