@@ -41,8 +41,10 @@ class MLPMixerModule(nn.Module):
         elif is_ssl is True:
             self.model = MLPMixer(num_classes=args.model['num_classes'], **args.mlp)
 
+            self.hidden_dim = self.model[-1].in_features
+
             # remove the classifier
-            self.model = nn.Sequential(*list(self.model.children())[:-3])
+            self.model = nn.Sequential(*list(self.model.children())[:-1])
 
     def forward(self, x):
         out = self.model(x)

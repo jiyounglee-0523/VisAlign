@@ -70,7 +70,7 @@ class VisionTransformerModule(nn.Module):
             patch_size = 16
             num_layers = 30
             num_heads = 16
-            hidden_dim = 1024
+            self.hidden_dim = 1024
             mlp_dim = 4096
 
             self.model = VisionTransformer(
@@ -78,7 +78,7 @@ class VisionTransformerModule(nn.Module):
                 patch_size=patch_size,
                 num_layers=num_layers,
                 num_heads=num_heads,
-                hidden_dim=hidden_dim,
+                hidden_dim=self.hidden_dim,
                 mlp_dim=mlp_dim,
                 num_classes=num_classes
             )

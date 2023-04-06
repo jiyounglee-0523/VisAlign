@@ -84,6 +84,8 @@ class EfficientNetModule(nn.Module):
 
             self.model = EfficientNet(inverted_residual_setting, dropout=0.5, last_channel=last_channel, num_classes=10)
 
+            self.hidden_dim = self.model.classifier[1].in_features
+
             # remove the last classifier
             self.model.classifier = Identity()
 

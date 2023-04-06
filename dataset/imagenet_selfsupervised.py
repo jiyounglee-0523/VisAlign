@@ -23,7 +23,7 @@ class ImageNetSelfSupervised(ImageNet):
                                     T.RandomHorizontalFlip(),
                                     T.RandomApply([color_jitter], p=0.8),
                                     T.RandomGrayscale(p=0.2),
-                                    T.GaussianBlur(kernel_size=int(0.1 * size)),
+                                    T.GaussianBlur(kernel_size=int(0.1 * size)+1),
                                     T.ToTensor()])
 
     def __getitem__(self, item):

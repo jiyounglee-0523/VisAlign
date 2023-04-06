@@ -82,8 +82,10 @@ class SwinTransformerModule(nn.Module):
                 num_classes=num_classes
             )
 
-        # remove the classifier and the layernorm
-        self.model = nn.Sequential(*list(self.model.children())[:-3])
+            self.hidden_dim = self.model.head.in_features
+
+            # remove the classifier and the layernorm
+            self.model = nn.Sequential(*list(self.model.children())[:-3])
 
 
 

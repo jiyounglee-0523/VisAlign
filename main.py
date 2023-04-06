@@ -4,10 +4,14 @@ import torch.nn
 import pytorch_lightning as pl
 from pytorch_lightning.strategies import DDPStrategy
 from pl_model import BaseModule
+from pl_model_selfsupervised import SSLBaseModule
+from models_selfsupervised.simclr_model import SimCLRModule
 
 from dataset.imagenet import ImageNetModule
 from dataset.imagenet_pretrain import ImageNetPretrainModule
 from dataset.imagenet_selfsupervised import ImageNetSSLModule
+
+from models_selfsupervised.model_types import SIMCLR
 
 import os
 import argparse
@@ -37,16 +41,29 @@ def get_train_config(args):
 
     # Save File Callback
     if not args.debug:
-        checkpoint_callback = pl.callbacks.ModelCheckpoint(
-            dirpath=args.save_dir,
-            filename="{epoch:06}--{val_acc:.2f}",
-            verbose=True,
-            save_last=True,
-            monitor='val_acc',
-            save_top_k=args.save_top_k,
-            mode='max',
-        )
-        callbacks.append(checkpoint_callback)
+        if not args.ssl:
+            checkpoint_callback = pl.callbacks.ModelCheckpoint(
+                dirpath=args.save_dir,
+                filename="{epoch:06}--{val_acc:.2f}",
+                verbose=True,
+                save_last=True,
+                monitor='val_acc',
+                save_top_k=args.save_top_k,
+                mode='max',
+            )
+            callbacks.append(checkpoint_callback)
+        else:
+            if args.ssl_type == SIMCLR:
+                checkpoint_callback = pl.callbacks.ModelCheckpoint(
+                    dirpath=args.save_dir,
+                    filename="{epoch:06}--{val_acc_top5:.2f}",
+                    verbose=True,
+                    save_last=True,
+                    monitor='val_acc_top5',
+                    save_top_k=args.save_top_k,
+                    mode='max',
+                )
+                callbacks.append(checkpoint_callback)
 
     config = {
         'max_epochs': args.n_epochs,
@@ -75,6 +92,7 @@ def main():
     parser.add_argument('--wandb_run_name', type=str)
     parser.add_argument('--batch_size', default=16, type=int)
     parser.add_argument('--ssl', action='store_true')
+    parser.add_argument('--ssl_type', type=str, choices=[SIMCLR])
 
     args = parser.parse_args()
 
@@ -97,21 +115,31 @@ def main():
 
     # logger
     if not args.debug:
-        logger = pl.loggers.WandbLogger(config=args, project=args.wandb_run_name, entity="image_reliability", save_dir="/home/jylee/wandb")
+        logger = pl.loggers.WandbLogger(config=args, project=args.wandb_run_name, entity='image-reliability', save_dir=f'/home/edlab/{os.getlogin()}/RELIABLE/reliable_project')
 
     
 
     # Call Dataset
     if args.ssl is True:
+        assert args.ssl_type is not None
         dataloader = ImageNetSSLModule(args)
+
+        # Call Model
+        model = None
+
+        if args.ssl_type == SIMCLR:
+            model = SimCLRModule(args)
+
+        assert model is not None
+
     else:
         if args.dataset['name'] == 'imagenet_pretrain':
             dataloader = ImageNetPretrainModule(args)
         else:
             dataloader = ImageNetModule(args)
 
-    # Call Model
-    model = BaseModule(args)
+        # Call Model
+        model = BaseModule(args)
 
     # Call Trainer Config
     trainer_config = get_train_config(args)
