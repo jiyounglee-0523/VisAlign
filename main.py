@@ -6,12 +6,13 @@ from pytorch_lightning.strategies import DDPStrategy
 from pl_model import BaseModule
 from pl_model_selfsupervised import SSLBaseModule
 from models_selfsupervised.simclr_model import SimCLRModule
+from models_selfsupervised.byol_model import BYOLModule
 
 from dataset.imagenet import ImageNetModule
 from dataset.imagenet_pretrain import ImageNetPretrainModule
 from dataset.imagenet_selfsupervised import ImageNetSSLModule
 
-from models_selfsupervised.model_types import SIMCLR
+from models_selfsupervised.model_types import SIMCLR, BYOL, DINO
 
 import os
 import argparse
@@ -26,13 +27,18 @@ def get_train_config(args):
     )
     callbacks.append(lr_callback)
 
+    if args.ssl:
+        monitor = 'val_acc_top5'
+    else:
+        monitor = 'val_acc'
+
     # Resume from checkpoint
 
 
     # Early Stopping Callback
     if args.early_stopping is True:
         early_stop_callback = pl.callbacks.EarlyStopping(
-            monitor='val_acc',
+            monitor=monitor,
             patience=args.early_stopping_patience,
             mode='max',
             verbose=True
@@ -44,10 +50,10 @@ def get_train_config(args):
         if not args.ssl:
             checkpoint_callback = pl.callbacks.ModelCheckpoint(
                 dirpath=args.save_dir,
-                filename="{epoch:06}--{val_acc:.2f}",
+                filename="{epoch:06}--{val_acc:.4f}",
                 verbose=True,
                 save_last=True,
-                monitor='val_acc',
+                monitor=monitor,
                 save_top_k=args.save_top_k,
                 mode='max',
             )
@@ -56,14 +62,27 @@ def get_train_config(args):
             if args.ssl_type == SIMCLR:
                 checkpoint_callback = pl.callbacks.ModelCheckpoint(
                     dirpath=args.save_dir,
-                    filename="{epoch:06}--{val_acc_top5:.2f}",
+                    filename="{epoch:06}--{val_acc_top5:.4f}",
                     verbose=True,
                     save_last=True,
-                    monitor='val_acc_top5',
+                    monitor=monitor,
                     save_top_k=args.save_top_k,
                     mode='max',
                 )
                 callbacks.append(checkpoint_callback)
+            if args.ssl_type == BYOL:
+                checkpoint_callback = pl.callbacks.ModelCheckpoint(
+                    dirpath=args.save_dir,
+                    filename="{epoch:06}--{val_loss:.4f}",
+                    verbose=True,
+                    save_last=True,
+                    # monitor=monitor,
+                    # save_top_k=args.save_top_k,
+                    # mode='max',
+                )
+                callbacks.append(checkpoint_callback)
+            if args.ssl_type == DINO:
+                raise NotImplementedError
 
     config = {
         'max_epochs': args.n_epochs,
@@ -85,18 +104,23 @@ def main():
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--save_dir', default='./', type=str)
     parser.add_argument('--n_epochs', default=1000, type=int)
-    parser.add_argument('--save_top_k', default=10, type=int)
+    parser.add_argument('--save_top_k', default=3, type=int)
     parser.add_argument('--reload_ckpt_dir', type=str)
     parser.add_argument('--n_gpus', default=1, type=int)
     parser.add_argument('--model_name', type=str)
+    parser.add_argument('--wandb_project_name', type=str)
     parser.add_argument('--wandb_run_name', type=str)
     parser.add_argument('--batch_size', default=16, type=int)
     parser.add_argument('--ssl', action='store_true')
-    parser.add_argument('--ssl_type', type=str, choices=[SIMCLR])
+    parser.add_argument('--ssl_type', type=str, choices=[SIMCLR, BYOL, DINO])
+    parser.add_argument('--cont_ssl', action='store_true')
+    parser.add_argument('--ssl_ckpt_dir', type=str)
 
     args = parser.parse_args()
 
     assert args.config is not None, 'Please specify config file'
+
+    assert not (args.ssl and args.cont_ssl), 'Choose either ssl or cont_ssl, but not both'
 
     with open(args.config) as f:
         config = yaml.safe_load(f)
@@ -115,20 +139,25 @@ def main():
 
     # logger
     if not args.debug:
-        logger = pl.loggers.WandbLogger(config=args, project=args.wandb_run_name, entity='image-reliability', save_dir=f'/home/edlab/{os.getlogin()}/RELIABLE/reliable_project')
-
-    
+        logger = pl.loggers.WandbLogger(config=args, project=args.wandb_project_name, name=args.wandb_run_name, entity='image-reliability', save_dir=f'/home/edlab/{os.getlogin()}/RELIABLE/reliable_project')
 
     # Call Dataset
     if args.ssl is True:
+
         assert args.ssl_type is not None
-        dataloader = ImageNetSSLModule(args)
 
         # Call Model
         model = None
 
+        dataloader = ImageNetSSLModule(args)
+
         if args.ssl_type == SIMCLR:
             model = SimCLRModule(args)
+        elif args.ssl_type == BYOL:
+            model = BYOLModule(args)
+        elif args.ssl_type == DINO:
+            raise NotImplementedError
+
 
         assert model is not None
 
@@ -138,8 +167,15 @@ def main():
         else:
             dataloader = ImageNetModule(args)
 
+        if args.cont_ssl:
+            assert args.ssl_ckpt_dir is not None
+            model = BaseModule(args)
+            model.load_from_checkpoint(args.ssl_ckpt_dir, strict=False)
+            model.model.replace_ssl()
+
         # Call Model
-        model = BaseModule(args)
+        else:
+            model = BaseModule(args)
 
     # Call Trainer Config
     trainer_config = get_train_config(args)

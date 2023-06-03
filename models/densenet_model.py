@@ -1,9 +1,9 @@
 import torch
 from torch import nn
-import torchvision
 from torchvision.models import densenet121, densenet161, densenet169, densenet201
 from torchvision.models import DenseNet201_Weights
 from torchvision.models.densenet import DenseNet
+from collections import OrderedDict
 
 from models.utils import Identity
 
@@ -58,19 +58,45 @@ class DenseNetModule(nn.Module):
                 raise NotImplementedError
 
         elif is_ssl is True:
-            growth_rate = 64
-            block_config = (24, 48, 84, 64)
-            num_init_features = 64
+            
+            if model_name == 'densenet201':
+                self.model = densenet201(num_classes=num_classes)
+            
+            elif model_name == 'densenet_extra':
+                growth_rate = 64
+                block_config = (24, 48, 84, 64)
+                num_init_features = 64
 
-            self.model = DenseNet(growth_rate, block_config, num_init_features, num_classes=num_classes)
+                self.model = DenseNet(growth_rate, block_config, num_init_features, num_classes=num_classes)
 
             self.hidden_dim = self.model.classifier.in_features
 
             # remove the last classifier
             self.model.classifier = Identity()
             # remove the last batchnorm
-            self.model.features = nn.Sequential(*list(self.model.features.children())[:-1])
+            # self.model.features = nn.Sequential(*list(self.model.features.children())[:-1])
+            self.model.features = nn.Sequential(
+                OrderedDict(
+                    list(self.model.features.named_children())[:-1]
+                )
+            )
 
     def forward(self, x):
         out = self.model(x)
         return out
+    
+    def replace_ssl(self):
+        hidden_dim = self.model.classifier.in_features
+        self.model.classifier = nn.Sequential(OrderedDict([
+            ('head', nn.Linear(in_features=hidden_dim, out_features=10, bias=True))
+            ]))
+        features = list(self.model.features.named_children())
+        features.append(('ln', nn.LayerNorm((hidden_dim,), eps=1e-06, elementwise_affine=True)))
+        self.model.features = nn.Sequential(
+            OrderedDict(
+                self.model.features.named_children(),
+                
+            )
+        )
+        # for param in self.model.features.parameters():
+        #     param.requires_grad = False

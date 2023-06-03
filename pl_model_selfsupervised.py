@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from models.vit_model import VisionTransformerModule
-from models.vit_model import VisionTransformerModule
 from models.convnext_model import ConvNext
 from models.mlpmixer_model import MLPMixerModule
 from models.swin_transformer_model import SwinTransformerModule
@@ -26,10 +25,10 @@ class SSLBaseModule(pl.LightningModule):
         elif args.model_name == 'mlp':
             self.model = MLPMixerModule(args=args, model_name=args.model_name, is_ssl=True, **self.args.model)
 
-        elif args.model_name == 'densenet_extra':
+        elif args.model_name in ['densenet201', 'densenet_extra']:
             self.model = DenseNetModule(model_name=args.model_name, is_ssl=True, **self.args.model)
 
-        elif args.model_name == 'swin_extra':
+        elif args.model_name in ['swin_t', 'swin_s', 'swin_b', 'swin_extra']:
             self.model = SwinTransformerModule(model_name=args.model_name, is_ssl=True, **self.args.model)
 
         # elif args.model_name == 'efficientnet_extra':
@@ -54,23 +53,24 @@ class SSLBaseModule(pl.LightningModule):
 
     def configure_optimizers(self):
         # optimizer
-        optimizer_fn = return_optimizer(self.args.trainer['optimizer'])
-        optimizer = optimizer_fn(self.model.parameters(), lr=float(self.args.trainer['lr']))
+        raise NotImplementedError
+    #     optimizer_fn = return_optimizer(self.args.trainer['optimizer'])
+    #     optimizer = optimizer_fn(self.model.parameters(), lr=float(self.args.trainer['lr']))
 
-        # lr scheduler
-        lr_scheduler_fn = return_lr_scheduler(self.args.trainer['lr_scheduler'])
-        scheduler = lr_scheduler_fn(
-            optimizer,
-            mode='min',
-            factor=0.5,
-            patience=10,
-            cooldown=10,
-            min_lr=1e-6,
-            verbose=True,
-        )
+    #     # lr scheduler
+    #     lr_scheduler_fn = return_lr_scheduler(self.args.trainer['lr_scheduler'])
+    #     scheduler = lr_scheduler_fn(
+    #         optimizer,
+    #         mode='min',
+    #         factor=0.5,
+    #         patience=10,
+    #         cooldown=10,
+    #         min_lr=1e-6,
+    #         verbose=True,
+    #     )
 
-        return {
-            'optimizer': optimizer,
-            'lr_scheduler': scheduler,
-            'monitor': 'train_loss'
-        }
+    #     return {
+    #         'optimizer': optimizer,
+    #         'lr_scheduler': scheduler,
+    #         'monitor': 'train_loss'
+    #     }

@@ -32,6 +32,8 @@ class ImageNetSelfSupervised(ImageNet):
         if data_source == 'imagenet':
             path = self.dataset_path['imagenet_path']
             path = os.path.join(path, image.split('_')[0])
+        elif data_source == 'imagenet21k':
+            path = self.dataset_path['imagenet21k_path']
         elif data_source == 'celeba':
             path = self.dataset_path['celeba_path']
         elif data_source == 'giraffe':

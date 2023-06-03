@@ -21,10 +21,10 @@ class BaseModule(pl.LightningModule):
         self.args = args
 
         if args.model_name in ['vit_b_16', 'vit_l_16', 'vit_h_14', 'vit_30_16']:
-            self.model = VisionTransformerModule(model_name=args.model_name, **self.args.model)
+            self.model = VisionTransformerModule(model_name=args.model_name, is_ssl=args.cont_ssl, **self.args.model)
 
         elif args.model_name in ['efficientnet_b0', 'efficientnet_b1', 'efficientnet_b2', 'efficientnet_extra']:
-            self.model = EfficientNetModule(model_name=args.model_name, **self.args.model)
+            self.model = EfficientNetModule(model_name=args.model_name, is_ssl=args.cont_ssl, **self.args.model)
 
         elif args.model_name in ['convnext_tiny', 'convnext_small', 'convnext_base', 'convnext_large', 'convnext_extra']:
             self.model = ConvNext(model_name=args.model_name, **self.args.model)

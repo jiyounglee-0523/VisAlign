@@ -1,10 +1,10 @@
 import torch
 from torch import nn
-import torchvision
 from torchvision.models import swin_t, swin_s, swin_b
 from torchvision.models import Swin_B_Weights
 from torchvision.models.swin_transformer import SwinTransformer
-
+from collections import OrderedDict
+from models.utils import Identity
 
 class SwinTransformerModule(nn.Module):
     def __init__(self,
@@ -65,27 +65,38 @@ class SwinTransformerModule(nn.Module):
                 raise NotImplementedError
 
         elif is_ssl is True:
-            patch_size = [4, 4]
-            embed_dim = 256
-            depths = [2, 2, 15, 2]
-            num_heads = [4, 8, 16, 32]
-            window_size = [7, 7]
-            stochastic_depth_prob = 0.5
 
-            self.model = SwinTransformer(
-                patch_size=patch_size,
-                embed_dim=embed_dim,
-                depths=depths,
-                num_heads=num_heads,
-                window_size=window_size,
-                stochastic_depth_prob=stochastic_depth_prob,
-                num_classes=num_classes
-            )
+            if model_name == 'swin_t':
+                self.model = swin_t(num_classes=num_classes)
+
+            if model_name == 'swin_s':
+                self.model = swin_s(num_classes=num_classes)
+
+            if model_name == 'swin_b':
+                self.model = swin_b(num_classes=num_classes)
+
+            elif model_name == 'swin_extra':
+                patch_size = [4, 4]
+                embed_dim = 256
+                depths = [2, 2, 15, 2]
+                num_heads = [4, 8, 16, 32]
+                window_size = [7, 7]
+                stochastic_depth_prob = 0.5
+
+                self.model = SwinTransformer(
+                    patch_size=patch_size,
+                    embed_dim=embed_dim,
+                    depths=depths,
+                    num_heads=num_heads,
+                    window_size=window_size,
+                    stochastic_depth_prob=stochastic_depth_prob,
+                    num_classes=num_classes
+                )
 
             self.hidden_dim = self.model.head.in_features
 
-            # remove the classifier and the layernorm
-            self.model = nn.Sequential(*list(self.model.children())[:-3])
+            self.model.norm = Identity()
+            self.model.head = Identity()
 
 
 
@@ -105,3 +116,15 @@ class SwinTransformerModule(nn.Module):
 
         out = self.model(x)
         return out
+    
+    def replace_ssl(self):
+        hidden_dim = self.model.head.in_features
+        self.model.norm = nn.LayerNorm((hidden_dim, ))
+        self.model.head = nn.Linear(in_features=hidden_dim, out_features=10, bias=True)
+
+        # for param in self.model.parameters():
+        #     param.requires_grad = False
+        # for param in self.model.norm.parameters():
+        #     param.requires_grad = True
+        # for param in self.model.head.parameters():
+        #     param.requires_grad = True

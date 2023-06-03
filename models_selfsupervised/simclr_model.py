@@ -18,7 +18,7 @@ class SimCLRModule(SSLBaseModule):
 
         self.projection_head = None
 
-        self.temperature = 0.1 # (maybe) TODO: hyperparam으로 추가하기
+        self.temperature = 0.5 # (maybe) TODO: hyperparam으로 추가하기
 
         if isinstance(self.model, (VisionTransformerModule, DenseNetModule, ConvNext, MLPMixerModule, SwinTransformerModule)):
             self.projection_head = nn.Sequential(
@@ -35,9 +35,10 @@ class SimCLRModule(SSLBaseModule):
 
         assert self.projection_head is not None
 
+        self.save_hyperparameters()
+
     def forward(self, x):
         return self.model(x)
-
 
 
     def _calculate_loss(self, batch, mode='train'):
@@ -46,7 +47,13 @@ class SimCLRModule(SSLBaseModule):
     
         # proj_feats1 = self.projection_head(self.model(imgs1))
         # proj_feats2 = self.projection_head(self.model(imgs2))
-        proj_feats = self.projection_head(self.model(imgs))
+        # print(imgs.shape)
+
+        feats = self.model(imgs)
+        # print(feats.shape)
+
+        proj_feats = self.projection_head(feats)
+        # print(proj_feats.shape)
 
         # proj_feats = torch.concat((proj_feats1, proj_feats2))
 

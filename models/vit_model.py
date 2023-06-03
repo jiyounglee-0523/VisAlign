@@ -4,9 +4,8 @@ import torchvision
 from torchvision.models import vit_b_16, vit_l_16, vit_h_14, vit_l_32
 from torchvision.models import ViT_L_32_Weights
 from torchvision.models.vision_transformer import VisionTransformer
-
 from models.utils import Identity
-
+from collections import OrderedDict
 
 class VisionTransformerModule(nn.Module):
     def __init__(self,
@@ -82,11 +81,15 @@ class VisionTransformerModule(nn.Module):
                 mlp_dim=mlp_dim,
                 num_classes=num_classes
             )
-
             # remove the last classifier
             self.model.heads = Identity()
             # remove the last layernorm
-            self.model.encoder = nn.Sequential(*list(self.model.encoder.children())[:-1])
+            # self.model.encoder = nn.Sequential(*list(self.model.encoder.children())[:-1])
+            self.model.encoder = nn.Sequential(
+                OrderedDict(
+                    list(self.model.encoder.named_children())[:-1]
+                )
+            )
 
 
     def forward(self, x):
@@ -100,6 +103,22 @@ class VisionTransformerModule(nn.Module):
 
         out = self.model(x)
         return out
+    
+    def replace_ssl(self):
+        hidden_dim = 1024
+        self.model.heads = nn.Sequential(OrderedDict([
+            ('head', nn.Linear(in_features=hidden_dim, out_features=10, bias=True))
+            ]))
+        encoder = list(self.model.encoder.named_children())
+        encoder.append(('ln', nn.LayerNorm((hidden_dim,), eps=1e-06, elementwise_affine=True)))
+        self.model.encoder = nn.Sequential(
+            OrderedDict(
+                self.model.encoder.named_children(),
+                
+            )
+        )
+        for param in self.model.encoder.parameters():
+            param.requires_grad = False
 
 
 
