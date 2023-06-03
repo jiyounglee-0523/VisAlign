@@ -104,11 +104,11 @@ def main():
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--save_dir', default='./', type=str)
     parser.add_argument('--n_epochs', default=1000, type=int)
-    parser.add_argument('--save_top_k', default=3, type=int)
+    parser.add_argument('--save_top_k', default=10, type=int)
     parser.add_argument('--reload_ckpt_dir', type=str)
     parser.add_argument('--n_gpus', default=1, type=int)
     parser.add_argument('--model_name', type=str)
-    parser.add_argument('--wandb_project_name', type=str)
+    parser.add_argument('--wandb_exec_name', type=str)
     parser.add_argument('--wandb_run_name', type=str)
     parser.add_argument('--batch_size', default=16, type=int)
     parser.add_argument('--ssl', action='store_true')
@@ -139,7 +139,7 @@ def main():
 
     # logger
     if not args.debug:
-        logger = pl.loggers.WandbLogger(config=args, project=args.wandb_project_name, name=args.wandb_run_name, entity='image-reliability', save_dir=f'/home/edlab/{os.getlogin()}/RELIABLE/reliable_project')
+        logger = pl.loggers.WandbLogger(config=args, project=args.wandb_run_name, name=args.wandb_exec_name, entity='image-reliability', save_dir=f'/home/edlab/{os.getlogin()}/RELIABLE/reliable_project')
 
     # Call Dataset
     if args.ssl is True:
