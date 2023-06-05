@@ -36,7 +36,7 @@ class DINOModule(SSLBaseModule):
 
 
         # hyperparams
-        hidden_size = 4096
+        hidden_size = 2048
         proj_size = 256
         dino_out_dim = 4096
         self.decay_rate = 0.996
@@ -209,7 +209,7 @@ class DINOModule(SSLBaseModule):
     def configure_optimizers(self):
         self.optimizer = torch.optim.AdamW(
             list(self.model.parameters()) + list(self.projection_head.parameters()) + list(self.last_layer.parameters()),
-            lr=0.005,
+            lr=0.2 * (self.args.batch_size * self.args.n_gpus / 256),
             weight_decay=1.5e-6
         )
         # lr scheduler

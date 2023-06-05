@@ -36,7 +36,7 @@ class DINOTransform:
         local_crop_size: Union[int, list, tuple] = 96,
         global_crops_scale: tuple = (0.4, 1), 
         local_crops_scale: tuple =(0.05, .4), 
-        n_local_crops: int = 8,
+        n_local_crops: int = 4,
         mean: list = [0.485, 0.456, 0.406], 
         std: list = [0.229, 0.224, 0.225],
         crop_resize_p: float = 0.5,
@@ -172,7 +172,7 @@ class ImageNetSelfSupervised(ImageNet):
         size = 224
         color_jitter = T.ColorJitter(0.8, 0.8, 0.8, 0.2)
         if ssl_type == 'dino':
-            self.transform = DINOTransform(256, crop_resize_p=1)
+            self.transform = DINOTransform(224, crop_resize_p=1)
         else:
             self.transform = T.Compose([T.RandomResizedCrop(size=size),
                                     T.RandomHorizontalFlip(),
