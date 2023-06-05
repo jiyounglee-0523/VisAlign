@@ -1,5 +1,5 @@
 SIMCLR = 'simclr'
-BYOL = 'byol'   # TODO: implement
-DINO = 'dino'   # TODO: implement
+BYOL = 'byol'
+DINO = 'dino'
 # DEIT = 'DEIT'
 # MAE = 'MAE'
