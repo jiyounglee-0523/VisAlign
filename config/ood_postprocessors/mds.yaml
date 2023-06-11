@@ -1,0 +1,6 @@
+postprocessor:
+  name: ensemble
+  APS_mode: True
+  postprocessor_args:
+    checkpoints: [45, 46, 47]
+    num_networks: 3  # number of networks to ensembel
