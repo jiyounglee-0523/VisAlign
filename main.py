@@ -7,6 +7,7 @@ from pl_model import BaseModule
 from pl_model_selfsupervised import SSLBaseModule
 from models_selfsupervised.simclr_model import SimCLRModule
 from models_selfsupervised.byol_model import BYOLModule
+from models_selfsupervised.dino_model import DINOModule
 
 from dataset.imagenet import ImageNetModule
 from dataset.imagenet_pretrain import ImageNetPretrainModule
@@ -82,7 +83,16 @@ def get_train_config(args):
                 )
                 callbacks.append(checkpoint_callback)
             if args.ssl_type == DINO:
-                raise NotImplementedError
+                checkpoint_callback = pl.callbacks.ModelCheckpoint(
+                    dirpath=args.save_dir,
+                    filename="{epoch:06}--{val_loss:.4f}",
+                    verbose=True,
+                    save_last=True,
+                    # monitor=monitor,
+                    # save_top_k=args.save_top_k,
+                    # mode='max',
+                )
+                callbacks.append(checkpoint_callback)
 
     config = {
         'max_epochs': args.n_epochs,
@@ -156,7 +166,7 @@ def main():
         elif args.ssl_type == BYOL:
             model = BYOLModule(args)
         elif args.ssl_type == DINO:
-            raise NotImplementedError
+            model = DINOModule(args)
 
 
         assert model is not None
