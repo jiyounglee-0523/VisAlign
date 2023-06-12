@@ -135,7 +135,7 @@ class BYOLModule(SSLBaseModule):
         scheduler = pl_bolts.optimizers.LinearWarmupCosineAnnealingLR(
             optimizer,
             warmup_epochs=10,
-            max_epochs=1000,
+            max_epochs=100,
         )
 
         return {

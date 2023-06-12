@@ -1,6 +1,9 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
+from flash.core.optimizers import LARS
+import pl_bolts
+
 
 from pl_model_selfsupervised import SSLBaseModule
 from models.vit_model import VisionTransformerModule
@@ -95,3 +98,24 @@ class SimCLRModule(SSLBaseModule):
     def validation_step(self, batch, batch_idx):
         return self._calculate_loss(batch, 'val')
 
+
+    def configure_optimizers(self):
+        # optimizer
+        optimizer = LARS(
+            list(self.model.parameters()) + list(self.projection_head.parameters()),
+            lr = 0.3 * (self.args.batch_size * self.args.n_gpus / 256),
+            weight_decay=1.5e-6
+        )
+
+        # lr scheduler
+        scheduler = pl_bolts.optimizers.LinearWarmupCosineAnnealingLR(
+            optimizer,
+            warmup_epochs=10,
+            max_epochs=100,
+        )
+
+        return {
+            'optimizer': optimizer,
+            'lr_scheduler': scheduler,
+            'monitor': 'train_loss'
+        }
