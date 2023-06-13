@@ -1,5 +1,15 @@
 postprocessor:
-  name: odin
-  postprocessor_args:
-    temperature: 1000
-    noise: 0.0014
+  name: msp
+
+model:
+  num_classes: 10
+  pretrained_weights: False
+  freeze_weights: False
+
+mlp:
+  image_size: 224
+  channels: 3
+  patch_size: 16
+  dim: 2048
+  depth: 60
+  expansion_factor: 10

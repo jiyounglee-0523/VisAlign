@@ -23,7 +23,7 @@ class DenseNetModule(nn.Module):
                 self.model = densenet201(weights=DenseNet201_Weights.DEFAULT)
 
                 # change the last layer to match num_classes
-                self.model.classifier = nn.Linear(self.model.classifier.in_feature, num_classes, bias=True)
+                self.model.classifier = nn.Linear(self.model.classifier.in_features, num_classes, bias=True)
 
                 # option to freeze weights
                 if freeze_weights is True:

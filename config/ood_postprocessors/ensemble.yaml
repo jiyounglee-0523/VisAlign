@@ -1,8 +1,19 @@
 postprocessor:
-  name: knn
+  name: ensemble
   APS_mode: True
   postprocessor_args:
-    K: 50
-  postprocessor_sweep:
-    K_list: [50]
+    checkpoints: [45, 46, 47]
+    num_networks: 3  # number of networks to ensembel
 
+model:
+  num_classes: 10
+  pretrained_weights: False
+  freeze_weights: False
+
+mlp:
+  image_size: 224
+  channels: 3
+  patch_size: 16
+  dim: 2048
+  depth: 60
+  expansion_factor: 10

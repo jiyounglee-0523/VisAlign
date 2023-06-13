@@ -67,7 +67,7 @@ def get_train_config(args):
 
     config = {
         'max_epochs': args.n_epochs,
-        'gpus': args.n_gpus,
+        'devices': args.n_gpus,
         'callbacks': callbacks
     }
     return config
