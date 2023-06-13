@@ -13,7 +13,7 @@ class VisionTransformerModule(nn.Module):
                  is_ssl=False,
                  num_classes=10,
                  pretrained_weights=False,
-                 freeze_weights=False,
+                 freeze_weights=False
                  ):
         super().__init__()
 
@@ -100,7 +100,6 @@ class VisionTransformerModule(nn.Module):
             flatten_channels - If True, the patches will be returned in a flattened format
                                as a feature vector instead of a image grid.
         """
-
         out = self.model(x)
         return out
     

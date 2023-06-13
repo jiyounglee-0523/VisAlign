@@ -1,6 +1,23 @@
 postprocessor:
-  name: ensemble
-  APS_mode: True
+  name: mds
   postprocessor_args:
-    checkpoints: [45, 46, 47]
-    num_networks: 3  # number of networks to ensembel
+    noise: 0.0014
+    feature_type_list: [mean]     # flat/mean/stat
+    alpha_list: [1]
+    reduce_dim_list: [none]   # none/capca/pca_50/lda
+
+dataset:
+  num_classes: 10
+
+model:
+  num_classes: 10
+  pretrained_weights: False
+  freeze_weights: False
+
+mlp:
+  image_size: 224
+  channels: 3
+  patch_size: 16
+  dim: 2048
+  depth: 60
+  expansion_factor: 10

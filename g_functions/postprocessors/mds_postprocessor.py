@@ -21,17 +21,17 @@ class MDSPostProcessor(BasePostProcessor):
     def __init__(self, config):
         super().__init__(config)
 
-        self.postprocessor_args = config.postprocessor.postprocessor_args
-        self.magnitude = self.postprocessor_args.noise
-        self.feature_type_list = self.postprocessor_args.feature_type_list
-        self.reduce_dim_list = self.postprocessor_args.reduce_dim_list
+        self.postprocessor_args = config.postprocessor['postprocessor_args']
+        self.magnitude = self.postprocessor_args['noise']
+        self.feature_type_list = self.postprocessor_args['feature_type_list']
+        self.reduce_dim_list = self.postprocessor_args['reduce_dim_list']
 
-        self.num_classes = self.config.dataset.num_classes
+        self.num_classes = self.config.dataset['num_classes']
         self.num_layer = len(self.feature_type_list)
 
         self.feature_mean, self.feature_prec = None, None
         self.alpha_list = None
-        self.args_dict = self.config.postprocessor.postprocessor_sweep
+        # self.args_dict = self.config.postprocessor['postprocessor_sweep']
 
     def setup(self, net: nn.Module, id_loader_dict, ood_loader_dict):
         # step 1: estimate initial mean and variance from training set
@@ -40,9 +40,9 @@ class MDSPostProcessor(BasePostProcessor):
                          self.feature_type_list, self.reduce_dim_list)
 
         # step 2: input process and hyperparam searching for alpha
-        if self.postprocessor_args.alpha_list:
+        if self.postprocessor_args['alpha_list']:
             print('\n Load predefined alpha list')
-            self.alpha_list = self.postprocessor_args.alpha_list
+            self.alpha_list = self.postprocessor_args['alpha_list']
         else:
             print('\n Searching for optimal alpha list')
             # get in-distribution scores
@@ -86,7 +86,7 @@ class MDSPostProcessor(BasePostProcessor):
     def postprocess(self, net: nn.Module, data: Any):
         for layer_index in range(self.num_layer):
 
-            pred, score = compute_Mahalanobis_score(net,
+            score = compute_Mahalanobis_score(net,
                                                     Variable(data, requires_grad=True),
                                                     self.num_classes,
                                                     self.feature_mean,
@@ -95,7 +95,7 @@ class MDSPostProcessor(BasePostProcessor):
                                                     layer_index,
                                                     self.feature_type_list,
                                                     self.magnitude,
-                                                    return_pred=True
+                                                    return_pred=False
                                                     )
 
             if layer_index == 0:
@@ -105,7 +105,7 @@ class MDSPostProcessor(BasePostProcessor):
 
         alpha = torch.cuda.FloatTensor(self.alpha_list)
         conf = torch.matmul(score_list, alpha)
-        return pred, conf
+        return conf
 
     def set_hyperparam(self, hyperparam: list):
         self.magnitude = hyperparam[0]
@@ -186,16 +186,15 @@ def get_MDS_stat(model, train_loader, num_classes, feature_type_list, reduce_dim
     label_list = []
 
     # collect features
-    for batch in tqdm(train_loader, desc='Compute mean/std'):
-        data = batch['data_aux'].cuda()
-        label = batch['label']
+    for image, label in tqdm(train_loader, desc='Compute mean/std'):
+        image = image.cuda()
 
-        _, feature_list = model(data, return_feature_list=True)
-        label_list.extend(tensor2list(label))
+        feature_list = [model(image)]
+        label_list.extend(tensor2list(label.reshape(-1)))
 
         for layer_idx in range(num_layer):
             feature_type = feature_type_list[layer_idx]
-            feature_processed = process_feature_type(feature_list[layer_idx], feature_type)  ## TODO: 여기 바꿔야 할 것 같음
+            feature_processed = process_feature_type(feature_list[layer_idx], feature_type)
 
             if isinstance(feature_all[layer_idx], type(None)):
                 feature_all[layer_idx] = tensor2list(feature_processed)
@@ -209,7 +208,7 @@ def get_MDS_stat(model, train_loader, num_classes, feature_type_list, reduce_dim
     for layer_idx in range(num_layer):
         feature_sub = np.array(feature_all[layer_idx])
         transform_matrix = reduce_feature_dim(feature_sub, label_list, reduce_dim_list[layer_idx])
-        transform_matrix.append(torch.Tensor(transform_matrix).cuda())
+        transform_matrix_list.append(torch.Tensor(transform_matrix).cuda())
         feature_sub = np.dot(feature_sub, transform_matrix)
 
         for feature, label in zip(feature_sub, label_list):
@@ -255,7 +254,7 @@ def get_Mahalanobis_scores(model, test_loader, num_classes, sample_mean,
     model.eval()
     Mahalnobis = []
 
-    for batch in tqdm(test_loader, desc=f'{test_loader.dataset.name}_layer{layer_index}'):
+    for batch in tqdm(test_loader):
         data = batch['data'].cuda()
         data = Variable(data, requires_grad=True)
         noise_gaussian_score = compute_Mahalanobis_score(
@@ -272,7 +271,7 @@ def compute_Mahalanobis_score(model, data, num_classes, sample_mean, precision,
                               transform_matrix, layer_index, feature_type_list,
                               magnitude, return_pred=False):
     # extract features
-    _, out_features = model(data, return_feature_list=True)
+    out_features = [model(data)]
     out_features = process_feature_type(out_features[layer_index], feature_type_list[layer_index])
     out_features = torch.mm(out_features, transform_matrix[layer_index])
 
@@ -321,7 +320,7 @@ def compute_Mahalanobis_score(model, data, num_classes, sample_mean, precision,
     tempInputs = torch.add(data.data, gradient, alpha=-magnitude)
 
     with torch.no_grad():
-        _, noise_out_features = model(Variable(tempInputs), return_feature_list=True)
+        noise_out_features = [model(Variable(tempInputs))]
         noise_out_features = process_feature_type(noise_out_features[layer_index], feature_type_list[layer_index])
         noise_out_features = torch.mm(noise_out_features, transform_matrix[layer_index])
 

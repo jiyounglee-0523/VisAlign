@@ -1,6 +1,18 @@
 postprocessor:
-  name: ensemble
-  APS_mode: True
+  name: dropout
   postprocessor_args:
-    checkpoints: [45, 46, 47]
-    num_networks: 3  # number of networks to ensembel
+    dropout_p: 0.5
+    dropout_times: 5
+
+model:
+  num_classes: 10
+  pretrained_weights: False
+  freeze_weights: False
+
+mlp:
+  image_size: 224
+  channels: 3
+  patch_size: 16
+  dim: 2048
+  depth: 60
+  expansion_factor: 10

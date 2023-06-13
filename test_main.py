@@ -1,13 +1,18 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 import argparse
 import os
+import pickle
+from tqdm import tqdm
+import yaml
 
 from models.vit_model import VisionTransformerModule
 from models.efficientnet_model import EfficientNetModule
 from models.convnext_model import ConvNext
+from models.densenet_model import DenseNetModule
 from models.mlpmixer_model import MLPMixerModule
 from models.cnn_model import CNNNet
 from models.swin_transformer_model import SwinTransformerModule
@@ -15,10 +20,11 @@ from models.resnext import ResNextModule
 from dataset.imagenet_test import IDImageNetTest, OODImageNetTest
 from dataset.imagenet import ImageNet
 from g_functions.utils import get_postprocessor
+from models.utils import Identity
 
-def return_model(model_name):
-    num_classes = 10,
-    pretrained_weights = False,
+def return_model(model_name, args=None):
+    num_classes = 10
+    pretrained_weights = False
     freeze_weights = False
 
     if model_name in ['vit_b_16', 'vit_l_16', 'vit_h_14', 'vit_30_16']:
@@ -33,8 +39,9 @@ def return_model(model_name):
     elif model_name in ['mixer_s16_224', 'mixer_s32_224', 'mixer_b16_224', 'mixer_b32_224', 'mixer_l16_224',
                              'mixer_l32_224', 'mlp']:
         if model_name == 'mlp':
-            raise NotImplementedError
-        model = MLPMixerModule(args=None, model_name=model_name, num_classes=num_classes, pretrained_weights=pretrained_weights, freeze_weights=freeze_weights)
+            model = MLPMixerModule(args=args, model_name='mixer_b16_224', num_classes=num_classes, pretrained_weights=pretrained_weights, freeze_weights=freeze_weights)
+        else:
+            model = MLPMixerModule(args=None, model_name='mixer_l16_224', num_classes=num_classes, pretrained_weights=pretrained_weights, freeze_weights=freeze_weights)
 
     elif model_name == 'cnn':
         model = CNNNet(model_name=model_name, num_classes=num_classes, pretrained_weights=pretrained_weights, freeze_weights=freeze_weights)
@@ -45,55 +52,95 @@ def return_model(model_name):
     elif model_name in ['resnext50_32x4d', 'resnext101_32x8d', 'resnext101_64x4d', 'resnext_extra']:
         model = ResNextModule(model_name=model_name, num_classes=num_classes, pretrained_weights=pretrained_weights, freeze_weights=freeze_weights)
 
+    elif model_name in ['densenet121', 'densenet161', 'densenet169', 'densenet201', 'densenet_extra']:
+        model = DenseNetModule(model_name=model_name, num_classes=num_classes, pretrained_weights=pretrained_weights, freeze_weights=freeze_weights)
+
     else:
         raise NotImplementedError
 
     return model
 
 
-def return_weight_loaded_model(model_name, ckpt_path):
-    model = return_model(model_name)
+def return_weight_loaded_model(model_name, ckpt_path, args=None):
+    model = return_model(model_name, args)
     # load ckpt file
     ckpt = torch.load(ckpt_path)
-    model.load_state_dict(ckpt['model_state_dict'])
+    ckpt['state_dict'] = {k[6:]: v for k, v in ckpt['state_dict'].items()}
+    # if model_name == 'densenet201':
+    #     ckpt['state_dict']['model.classifier.weight'] = ckpt['state_dict'].pop('model.classifier.head.weight')
+    #     ckpt['state_dict']['model.classifier.bias'] = ckpt['state_dict'].pop('model.classifier.head.bias')
+    model.load_state_dict(ckpt['state_dict'])
+    return model
+
+
+def model_feature_list(model_name, model):
+    if model_name in ['vit_b_16', 'vit_l_16', 'vit_h_14', 'vit_30_16']:
+        model.model.heads = Identity()
+        model.model.encoder = nn.Sequential(*list(model.model.encoder.children())[:-1])
+
+    elif model_name in ['convnext_extra']:
+        model.classifier = Identity()
+
+    elif model_name in ['swin_extra']:
+        model.model.head = Identity()
+
+    # elif model_name in ['mlp']:
+    #     model = nn.Sequential(*list(model.model.children())[:-1])
+
     return model
 
 
 def classify_main(args):
     id_dataloader = DataLoader(
-        IDImageNetTest(args.dataset_path),
+        IDImageNetTest(args.test_id_dataset_path),
         batch_size=args.batch_size,
         shuffle=False,
         num_workers=8,
         pin_memory=True
     )
 
-    model = return_weight_loaded_model(args.model_name, args.ckpt_path)
+    model = return_weight_loaded_model(args.model_name, args.ckpt_dir, args=args)
     model.eval()
+    model = model.cuda()
 
     image_names = []
     gt_targets = []
     predictions = []
 
-    for (image_name, image, target) in id_dataloader:
-        image = image.cuda()
+    with torch.no_grad():
+        for (image_name, image, target) in tqdm(id_dataloader):
+            image = image.cuda()
 
-        # forward
-        output = model(image)
-        prediction = output.argmax(dim=-1)  # prediction
+            # forward
+            prediction = model(image)
+            prediction = F.softmax(prediction, dim=-1)
 
-        image_names.append(image_name)
-        gt_targets.append(target)
-        predictions.append(prediction)
+            # target
+            target = F.one_hot(target, num_classes=11)
 
-    ## 후처리해주기
+            image_names.extend(image_name)
+            gt_targets.append(target)
+            predictions.append(prediction)
 
-    # dictionary 만들고 저장하기
+    gt_targets = torch.vstack(gt_targets)
+    predictions = torch.vstack(predictions)
 
+    id_prediction = dict()
+
+    for image_name, gt_target, prediction in zip(image_names, gt_targets, predictions):
+        id_prediction[image_name] = (gt_target, prediction)
+
+    if args.debug is False:
+        with open(os.path.join(args.save_dir, f'{args.model_name}-{args.seed}-id_prediction.pk'), 'wb') as f:
+            pickle.dump(id_prediction, f)
+
+    print('Finished Predictiong In-Domain Dataset!')
 
 def OOD_main(args):
     ood_dataloader = DataLoader(
-        OODImageNetTest(args.dataset_path),
+        OODImageNetTest(
+            args.test_id_dataset_path
+        ),
         batch_size=args.batch_size,
         shuffle=False,
         num_workers=8,
@@ -102,8 +149,9 @@ def OOD_main(args):
 
     dataset_path = {
         'train': {
-            'label_path': '/home/edlab/jylee/RELIABLE/data/final_dataset/final_train',
+            'label_path': '/home/edlab/shkim/RELIABLE/data/imagenet21k/final_dataset/final_train',
             'imagenet_path': '/home/data_storage/imagenet/train',
+            'imagenet21k_path': '/home/edlab/shkim/RELIABLE/data/imagenet21k/raw',
             'celeba_path': '/home/data_storage/CelebA/celeba/img_align_celeba',
             'giraffe_path': '/home/edlab/jylee/RELIABLE/data/animal/giraffe/data',
             'kangaroo_path': '/home/edlab/jylee/RELIABLE/data/animal/kangaroo/data',
@@ -112,8 +160,9 @@ def OOD_main(args):
             'gorilla_path': '/home/edlab/jylee/RELIABLE/data/animal/gorilla/data',
         },
         'eval': {
-            'label_path': '/home/edlab/jylee/RELIABLE/data/final_dataset/final_eval',
+            'label_path': '/home/edlab/shkim/RELIABLE/data/imagenet21k/final_dataset/final_eval',
             'imagenet_path': '/home/data_storage/imagenet/train',
+            'imagenet21k_path': '/home/edlab/shkim/RELIABLE/data/imagenet21k/raw',
             'celeba_path': '/home/data_storage/CelebA/celeba/img_align_celeba',
             'giraffe_path': '/home/edlab/jylee/RELIABLE/data/animal/giraffe/data',
             'kangaroo_path': '/home/edlab/jylee/RELIABLE/data/animal/kangaroo/data',
@@ -131,27 +180,40 @@ def OOD_main(args):
             num_workers=8,
             pin_memory=True),
 
-        'val': DataLoader(ImageNet(dataset_path, is_training=False),
-                          batch_size=args.batch_size,
-                          shuffle=False,
-                          num_workers=8,
-                          pin_memory=True)
+        'val': DataLoader(
+            ImageNet(dataset_path, is_training=False),
+            batch_size=args.batch_size,
+            shuffle=False,
+            num_workers=8,
+            pin_memory=True)
     }
 
     # model
-    model = return_weight_loaded_model(args.model_name, args.ckpt_path)
-    model.eval()
+    ## TODO: ensemble은 다르게 하기
+    model = return_weight_loaded_model(args.model_name, args.ckpt_dir, args=args)
 
-    postprocessor = get_postprocessor(args.postprocessor_name)
+    if args.postprocessor_name in ['knn', 'mds', 'tapudd']:
+        model = model_feature_list(args.model_name, model)
+
+    model.eval()
+    model = model.cuda()
+
+    postprocessor = get_postprocessor(args.postprocessor_name)(args)
     postprocessor.setup(model, id_loader_dict, ood_dataloader)
 
-    # evaluate
-    metrics_list = list()
+    print('Start Calculating OOD Score')
+    ood_conf, image_lists = postprocessor.inference(model, ood_dataloader)
 
-    ood_pred, ood_conf, image_lists = postprocessor.inference(model, ood_dataloader)
+    ood_score = dict()
+    for ood, image in zip(ood_conf, image_lists):
+        ood_score[image] = ood
 
-    # 후처리
-    # 저장하기
+    if args.debug is False:
+
+        with open(os.path.join(args.save_dir, f'{args.model_name}-{args.postprocessor_name}-{args.seed}-oodscore.pk'), 'wb') as f:
+            pickle.dump(ood_score, f)
+
+    print('Finished Calculating OOD Score')
 
 def main():
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -159,20 +221,65 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--debug', action='store_true')
-    parser.add_argument('--save_dir', default='./', type=str)
+    parser.add_argument('--save_dir', default='./', type=str, help='')
+    parser.add_argument('--config', default='/home/jylee/RELIABILITY/reliability/config/ood_postprocessors', type=str)
     parser.add_argument('--ckpt_dir', type=str)
     parser.add_argument('--model_name')
     parser.add_argument('--batch_size', default=16, type=int)
+    parser.add_argument('--test_id_dataset_path', type=str)
+    parser.add_argument('--ood_adversarial_path', type=str)
+    parser.add_argument('--train_id_train_dataset_path', type=str)
+    parser.add_argument('--train_id_eval_dataset_path', type=str)
+    parser.add_argument('--postprocessor_name', type=str, choices=['knn', 'mcdropout', 'mds', 'odin', 'msp', 'ensemble', 'tapudd'])
+    parser.add_argument('--seed', type=int, default=45)
 
     args = parser.parse_args()
 
+    # with open(os.path.join(args.config, f'{args.postprocessor_name}.yaml')) as f:
+    #     config = yaml.safe_load(f)
+    #
+    # for k, v in config.items():
+    #     args.__setattr__(k, v)
+    #
     assert args.ckpt_dir is not None, 'Please specify checkpoint file path'
+    #
+    # OOD_main(args)
+
 
     # ID Dataset classification
-    classify_main(args)
+    # classify_main(args)
 
     # OOD score
-    OOD_main(args)
+
+    # for model_name in ['convnext_extra', 'swin_extra', 'mlp', 'vit', 'densenet']:
+    # for model_name in ['mlp', 'vit', 'densenet']:
+    # for model_name in ['dense', 'swin']:
+    for model_name in ['dense']:
+        for seed in [45, 46, 47, 48, 49]:
+            for postprocessor_name in ['knn', 'odin', 'mcdropout', 'mds', 'msp', 'tapudd']:
+            # for postprocessor_name in ['mcdropout']:
+                print(postprocessor_name)
+                args.ckpt_dir = f'/home/edlab/shkim/RELIABLE/checkpoints/scratch/{model_name}_{seed}/best.ckpt'
+                args.seed = seed
+                args.model_name = model_name
+                if model_name == 'swin':
+                    args.model_name = 'swin_extra'
+                elif model_name == 'dense':
+                    args.model_name = 'densenet201'
+                elif model_name == 'vit':
+                    args.model_name = 'vit_30_16'
+                args.postprocessor_name = postprocessor_name
+
+                with open(os.path.join(args.config, f'{args.postprocessor_name}.yaml')) as f:
+                    config = yaml.safe_load(f)
+
+                for k, v in config.items():
+                    args.__setattr__(k, v)
+
+                if postprocessor_name == 'odin':
+                    classify_main(args)
+
+                OOD_main(args)
 
 
 if __name__ == '__main__':

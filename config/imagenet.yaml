@@ -32,8 +32,8 @@ dataset:
 
 model:
   num_classes: 10
-  pretrained_weights: False
-  freeze_weights: False
+  pretrained_weights: True
+  freeze_weights: True
 
 vit:
   embed_dim: 256

@@ -1,7 +1,18 @@
 postprocessor:
-  name: mds
+  name: odin
   postprocessor_args:
+    temperature: 1000
     noise: 0.0014
-    feature_type_list: [mean, mean, mean]     # flat/mean/stat
-    alpha_list: #[0, 0, 1]
-    reduce_dim_list: [none, none, pca_50]   # none/capca/pca_50/lda
+
+model:
+  num_classes: 10
+  pretrained_weights: False
+  freeze_weights: False
+
+mlp:
+  image_size: 224
+  channels: 3
+  patch_size: 16
+  dim: 2048
+  depth: 60
+  expansion_factor: 10
