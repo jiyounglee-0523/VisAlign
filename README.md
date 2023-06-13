@@ -77,15 +77,14 @@ You can evaluate abstention function using the follwoing command:
 ```
 python test_main.py 
   --save_dir {save_dir} # directory to save abstention function result
-  --ckpt_dir {ckpt_di} # directory where model checkpoints exist
+  --ckpt_dir {ckpt_dir} # directory where model checkpoints exist
   --model_name {model_name}
-  --postprocessor_name {abstention_function}', type=str, choices=['knn', 'mcdropout', 'mds', 'odin', 'msp', 'ensemble', 'tapudd'])
-    parser.add_argument('--seed', type=int, default=45)
+  --postprocessor_name {abstention_function}
 ```
 You can choose the abstention function using `postprocessor_name` argument. The choices of abstention functions are `knn`, `mcdropout`, `mds`, `odin`, `msp`, `ensemble`, `tapudd`.
 
 You can evaluate a model's visual alignment via Hellinger's distance as described in our paper.
-This implementation additionally allows you to report the proposed reliability score, which lets you choose a cost value *c* for incorrect decisions.
+<!-- This implementation additionally allows you to report the proposed reliability score, which lets you choose a cost value *c* for incorrect decisions. -->
 
 *TODO: ADD EVALUATION COMMAND*
 
