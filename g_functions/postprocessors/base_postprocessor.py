@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 import numpy as np
 
 from typing import Any
+from tqdm import tqdm
 
 
 class BasePostProcessor():
@@ -18,24 +19,21 @@ class BasePostProcessor():
     def postprocess(self, net: nn.Module, data: Any):
         output = net(data)
         score = torch.softmax(output, dim=1)
-        conf, pred = torch.max(score, dim=1)
-        return pred, conf
+        # conf, pred = torch.max(score, dim=1)
+        return score
 
     def inference(self, net: nn.Module, data_loader: DataLoader):
-        pred_list, conf_list, image_lists = [], [], []
+        conf_list, image_lists = [], []
 
-        for (image_name, image) in data_loader:
-            image_lists.extend(image_name.tolist())   # TODO: 확인하기
+        for (image_name, image) in tqdm(data_loader):
+            image_lists.extend(image_name)
             data = image.cuda()
-            # label = batch['label'].cuda()
-            pred, conf = self.postprocess(net, data)
+            conf = self.postprocess(net, data)
             for idx in range(len(data)):
-                pred_list.append(pred[idx].cpu().tolist())
                 conf_list.append(conf[idx].cpu().tolist())
-                # label_list.append(label[idx].cpu().tolist())
 
-        pred_list = np.array(pred_list, dtype=int)
+
+
         conf_list = np.array(conf_list)
-        # label_list = np.array(label_list, dtype=int)
 
-        return pred_list, conf_list, image_lists
+        return conf_list, image_lists

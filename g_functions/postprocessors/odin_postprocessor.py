@@ -8,11 +8,11 @@ from .base_postprocessor import BasePostProcessor
 class ODINPostProcessor(BasePostProcessor):
     def __init__(self, config):
         super().__init__(config)
-        self.args = self.config.postprocessor.postprocessor_args
+        self.args = self.config.postprocessor['postprocessor_args']
 
-        self.temperature = self.args.temperature
-        self.noise = self.args.noise
-        self.args_dict = self.config.postprocessor.postprocessor_sweep
+        self.temperature = self.args['temperature']
+        self.noise = self.args['noise']
+        # self.args_dict = self.config.postprocessor['postprocessor_sweep']
 
     def postprocess(self, net: nn.Module, data: Any):
         data.requires_grad = True
@@ -49,9 +49,9 @@ class ODINPostProcessor(BasePostProcessor):
         nnOutput = nnOutput - nnOutput.max(dim=1, keepdims=True).values
         nnOutput = nnOutput.exp() / nnOutput.exp().sum(dim=1, keepdims=True)
 
-        conf, pred = nnOutput.max(dim=1)
+        # conf, _ = nnOutput.max(dim=1)
 
-        return pred, conf
+        return nnOutput
 
     def set_hyperparam(self, hyperparam: list):
         self.temperature = hyperparam[0]

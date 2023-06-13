@@ -3,6 +3,7 @@ from g_functions.postprocessors.mcdropout_postprocessor import MCDropoutPostProc
 from g_functions.postprocessors.mds_postprocessor import MDSPostProcessor
 from g_functions.postprocessors.odin_postprocessor import ODINPostProcessor
 from g_functions.postprocessors.base_postprocessor import BasePostProcessor
+from g_functions.postprocessors.tapudd_postprocessor import TAPUDDPostProcessor
 
 
 # Self-Ensemble
@@ -15,6 +16,7 @@ def get_postprocessor(postprocessor_name):
         'mds': MDSPostProcessor,
         'odin': ODINPostProcessor,
         'msp': BasePostProcessor,
+        'tapudd': TAPUDDPostProcessor,
     }
 
     return postprocessors[postprocessor_name]

@@ -1,10 +1,8 @@
 postprocessor:
-  name: knn
-  APS_mode: True
+  name: mds
   postprocessor_args:
-    K: 50
-  postprocessor_sweep:
-    K_list: [50]
+    noise: 0.0014
+    feature_type_list: [mean]     # flat/mean/stat
 
 model:
   num_classes: 10
@@ -18,4 +16,3 @@ mlp:
   dim: 2048
   depth: 60
   expansion_factor: 10
-

@@ -19,6 +19,7 @@ class BaseModule(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
         self.args = args
+        self.validation_step_outputs = list()
 
         if args.model_name in ['vit_b_16', 'vit_l_16', 'vit_h_14', 'vit_30_16']:
             self.model = VisionTransformerModule(model_name=args.model_name, is_ssl=args.cont_ssl, **self.args.model)
@@ -88,10 +89,12 @@ class BaseModule(pl.LightningModule):
             'labels': labels,
         }
 
+        self.validation_step_outputs.append(output)
+
         # loss = self._calculate_ce_loss(batch, mode="val")
         return output
 
-    def validation_epoch_end(self, validation_step_outputs):
+    def on_validation_epoch_end(self):
         '''
         validation_step_outputs: list
         DDP에서는 'GPU process' 별로 validation_step, validation_step_end를 거쳐 validation_step_ouptuts라는 리스트에 원소로 쌓인다.
@@ -100,7 +103,7 @@ class BaseModule(pl.LightningModule):
         preds = []
         labels = []
 
-        for val_step_output in validation_step_outputs:
+        for val_step_output in self.validation_step_outputs:
             preds.append(val_step_output['preds'])
             labels.append(val_step_output['labels'])
 
@@ -118,7 +121,7 @@ class BaseModule(pl.LightningModule):
         loss = self._calculate_ce_loss(batch, mode="test")
         return loss
 
-    def test_epoch_end(self, test_step_outputs):
+    def on_test_epoch_end(self):
         '''
         test_step_outputs: list
         DDP에서는 'GPU process' 별로 test_step, test_step_end를 거쳐 test_step_ouptuts라는 리스트에 원소로 쌓인다.

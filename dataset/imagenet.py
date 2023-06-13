@@ -13,16 +13,8 @@ import os
 
 '''
 Target label integer
-0: Tiger
-1: Zebra
-2: Camel
-3: Giraffe
-4: Elephant
-5: Hippo
-6: Orangutan
-7: Polar Bear
-8: Kangaroo
-9: Human
+'tiger.txt', 'zebra.txt', 'camel.txt', 'giraffe.txt', 'elephant.txt', 'rhino.txt',
+                           'gorilla.txt', 'bear.txt', 'kangaroo.txt', 'human.txt'
 '''
 
 def transform_fn(is_training):
