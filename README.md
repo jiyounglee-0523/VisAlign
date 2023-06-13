@@ -73,6 +73,9 @@ You can choose the model architecture and model size using the `model_name` argu
 - DenseNet: `densenet_extra`
 - MLP-Mixer: `mlp`
 ## Evaluate
+You can evaluate abstention function using the follwoing command:
+ 
+
 You can evaluate a model's visual alignment via Hellinger's distance as described in our paper.
 This implementation additionally allows you to report the proposed reliability score, which lets you choose a cost value *c* for incorrect decisions.
 
