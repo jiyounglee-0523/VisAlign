@@ -34,7 +34,7 @@ Our code and data will be released upon acceptance.
 - `mlp-mixer-pytorch==0.1.1`
 
 ## Dataset
-The train set and the open test set can be downloaded from [here](https://github.com/jiyounglee-0523/reliable_project). *TODO: UPDATE LINK*
+The train set and the open test set can be downloaded from [here](https://www.dropbox.com/s/p19z9xr3l8o7dzu/VisAlign.tar.gz).
 
 After extracting the file, you will have the following files/directories:
 ```
@@ -59,7 +59,6 @@ dataset:
     imagenet21k_path: {path to train_files}
     ...
 ```
-*TODO: OPEN_TEST_SET INSTRUCTIONS*
 
 ## Train
 You can train a baseline model using the following command:
@@ -72,6 +71,7 @@ You can choose the model architecture and model size using the `model_name` argu
 - ConvNeXt: `convnext_extra`
 - DenseNet: `densenet_extra`
 - MLP-Mixer: `mlp`
+
 ## Evaluate
 You can evaluate abstention function using the follwoing command:
 ```
@@ -85,8 +85,11 @@ You can choose the abstention function using `postprocessor_name` argument. The 
 
 You can evaluate a model's visual alignment via Hellinger's distance as described in our paper.
 <!-- This implementation additionally allows you to report the proposed reliability score, which lets you choose a cost value *c* for incorrect decisions. -->
-
-*TODO: ADD EVALUATION COMMAND*
+```
+python evaluate_visual_alignment.py 
+  --save_dir {save_dir}          # directory where the absention function results are stored
+  --dataset_path {dataset_path}  # directory wehre dataset is stored
+```
 
 ## Citation
 ```
