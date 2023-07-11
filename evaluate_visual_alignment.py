@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 
 import pandas as pd
 import numpy as np
@@ -27,7 +28,7 @@ def evaluate(args):
 
     }
 
-    PATH = args.dataset_path
+    PATH = args.test_filenames_path
 
     with open(os.path.join(PATH, 'category1.txt'), 'r') as f:
         category1_files = f.read().split('\n')
@@ -69,10 +70,10 @@ def evaluate(args):
 
     category8_files = [a.split('/')[1] for a in category8_files[:-1]]
 
-    ivs = category1_files + category2_files + category3_files + category4_files + category5_files + category6_files + category7_files + category8_files
+    files = category1_files + category2_files + category3_files + category4_files + category5_files + category6_files + category7_files + category8_files
 
     # corruption_label
-    with open('/home/edlab/jylee/RELIABLE/data/final_reatention/corruption_labels.pk', 'rb') as f:
+    with open(args.corruption_path, 'rb') as f:
         corruption_label = pickle.load(f)
 
     result_df = pd.DataFrame(columns=[
@@ -101,7 +102,7 @@ def evaluate(args):
                     ood_score = pickle.load(f)
 
                 # ood_score normalization
-                if ood_method in ['mds', 'knn', 'tapudd', ]:
+                if ood_method in ['mds', 'knn', 'tapudd']:
                     ood_scores = torch.Tensor(list(ood_score.values()))
                     ood_scores_min = ood_scores.min().item()
                     ood_scores -= ood_scores.min()
@@ -137,7 +138,7 @@ def evaluate(args):
                 category8_list = list()
 
                 #             for image in images:
-                for image in ivs:
+                for image in files:
                     if ood_score[image] > 1:
                         ood_score[image] = 1
                         abstention_rate = (ood_score[image])
@@ -146,7 +147,6 @@ def evaluate(args):
 
                     # noramlize remaining probability
                     gt = id_prediction[image][0]
-                    #                 gt = F.one_hot(torch.LongTensor([label2int[image.split('_')[0]]]), num_classes=11)
                     prediction = id_prediction[image][1]
 
                     if image in category1_files:
@@ -207,7 +207,8 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--save_dir', default='./', type=str, help='')
-    parser.add_argument('--dataset_path', type=str)
+    parser.add_argument('--test_filenames_path', default='./VisAlign_dataset/open_test_set/label', type=str)
+    parser.add_argument('--corruption_path', default='./VisAlign_dataset/open_test_corruption_labels.pk')
 
     args = parser.parse_args()
 

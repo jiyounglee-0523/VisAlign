@@ -92,7 +92,7 @@ def model_feature_list(model_name, model):
 
 def classify_main(args):
     id_dataloader = DataLoader(
-        IDImageNetTest(args.test_id_dataset_path),
+        IDImageNetTest(args.test_dataset_path),
         batch_size=args.batch_size,
         shuffle=False,
         num_workers=8,
@@ -130,16 +130,15 @@ def classify_main(args):
     for image_name, gt_target, prediction in zip(image_names, gt_targets, predictions):
         id_prediction[image_name] = (gt_target, prediction)
 
-    if args.debug is False:
-        with open(os.path.join(args.save_dir, f'{args.model_name}-{args.seed}-id_prediction.pk'), 'wb') as f:
-            pickle.dump(id_prediction, f)
+    with open(os.path.join(args.save_dir, f'{args.model_name}-{args.seed}-id_prediction.pk'), 'wb') as f:
+        pickle.dump(id_prediction, f)
 
     print('Finished Predictiong In-Domain Dataset!')
 
 def OOD_main(args):
     ood_dataloader = DataLoader(
         OODImageNetTest(
-            args.test_id_dataset_path
+            args.test_dataset_path
         ),
         batch_size=args.batch_size,
         shuffle=False,
@@ -149,26 +148,12 @@ def OOD_main(args):
 
     dataset_path = {
         'train': {
-            'label_path': '/home/edlab/shkim/RELIABLE/data/imagenet21k/final_dataset/final_train',
-            'imagenet_path': '/home/data_storage/imagenet/train',
-            'imagenet21k_path': '/home/edlab/shkim/RELIABLE/data/imagenet21k/raw',
-            'celeba_path': '/home/data_storage/CelebA/celeba/img_align_celeba',
-            'giraffe_path': '/home/edlab/jylee/RELIABLE/data/animal/giraffe/data',
-            'kangaroo_path': '/home/edlab/jylee/RELIABLE/data/animal/kangaroo/data',
-            'lsp_path': '/home/edlab/jylee/RELIABLE/data/LSP/train',
-            'rhino_path': '/home/edlab/jylee/RELIABLE/data/animal/rhino/data',
-            'gorilla_path': '/home/edlab/jylee/RELIABLE/data/animal/gorilla/data',
+            'label_path': f'{args.train_dataset_path}/train_split_filename/final_train',
+            'imagenet21k_path': f'{args.train_dataset_path}/train_files',
         },
         'eval': {
-            'label_path': '/home/edlab/shkim/RELIABLE/data/imagenet21k/final_dataset/final_eval',
-            'imagenet_path': '/home/data_storage/imagenet/train',
-            'imagenet21k_path': '/home/edlab/shkim/RELIABLE/data/imagenet21k/raw',
-            'celeba_path': '/home/data_storage/CelebA/celeba/img_align_celeba',
-            'giraffe_path': '/home/edlab/jylee/RELIABLE/data/animal/giraffe/data',
-            'kangaroo_path': '/home/edlab/jylee/RELIABLE/data/animal/kangaroo/data',
-            'lsp_path': '/home/edlab/jylee/RELIABLE/data/LSP/train',
-            'rhino_path': '/home/edlab/jylee/RELIABLE/data/animal/rhino/data',
-            'gorilla_path': '/home/edlab/jylee/RELIABLE/data/animal/gorilla/data',
+            'label_path': f'{args.train_dataset_path}/train_split_filename/final_eval',
+            'imagenet21k_path': f'{args.train_dataset_path}/train_files',
         }
     }
 
@@ -189,7 +174,6 @@ def OOD_main(args):
     }
 
     # model
-    ## TODO: ensemble은 다르게 하기
     model = return_weight_loaded_model(args.model_name, args.ckpt_dir, args=args)
 
     if args.postprocessor_name in ['knn', 'mds', 'tapudd']:
@@ -208,10 +192,8 @@ def OOD_main(args):
     for ood, image in zip(ood_conf, image_lists):
         ood_score[image] = ood
 
-    if args.debug is False:
-
-        with open(os.path.join(args.save_dir, f'{args.model_name}-{args.postprocessor_name}-{args.seed}-oodscore.pk'), 'wb') as f:
-            pickle.dump(ood_score, f)
+    with open(os.path.join(args.save_dir, f'{args.model_name}-{args.postprocessor_name}-{args.seed}-oodscore.pk'), 'wb') as f:
+        pickle.dump(ood_score, f)
 
     print('Finished Calculating OOD Score')
 
@@ -220,66 +202,23 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--debug', action='store_true')
     parser.add_argument('--save_dir', default='./', type=str, help='')
-    parser.add_argument('--config', default='/home/jylee/RELIABILITY/reliability/config/ood_postprocessors', type=str)
+    parser.add_argument('--config', default='./config/ood_postprocessors', type=str)
     parser.add_argument('--ckpt_dir', type=str)
     parser.add_argument('--model_name')
     parser.add_argument('--batch_size', default=16, type=int)
-    parser.add_argument('--test_id_dataset_path', type=str)
-    parser.add_argument('--ood_adversarial_path', type=str)
-    parser.add_argument('--train_id_train_dataset_path', type=str)
-    parser.add_argument('--train_id_eval_dataset_path', type=str)
-    parser.add_argument('--postprocessor_name', type=str, choices=['knn', 'mcdropout', 'mds', 'odin', 'msp', 'ensemble', 'tapudd'])
+    parser.add_argument('--test_dataset_path', default='./VisAlign_dataset/open_test_set', type=str)
+    parser.add_argument('--train_dataset_path', default='./VisAlign_dataset')
+    parser.add_argument('--postprocessor_name', type=str, choices=['knn', 'mcdropout', 'mds', 'odin', 'msp', 'tapudd'])
     parser.add_argument('--seed', type=int, default=45)
 
     args = parser.parse_args()
 
-    # with open(os.path.join(args.config, f'{args.postprocessor_name}.yaml')) as f:
-    #     config = yaml.safe_load(f)
-    #
-    # for k, v in config.items():
-    #     args.__setattr__(k, v)
-    #
     assert args.ckpt_dir is not None, 'Please specify checkpoint file path'
-    #
-    # OOD_main(args)
-
-
     # ID Dataset classification
-    # classify_main(args)
+    classify_main(args)
 
-    # OOD score
-
-    # for model_name in ['convnext_extra', 'swin_extra', 'mlp', 'vit', 'densenet']:
-    # for model_name in ['mlp', 'vit', 'densenet']:
-    # for model_name in ['dense', 'swin']:
-    for model_name in ['dense']:
-        for seed in [45, 46, 47, 48, 49]:
-            for postprocessor_name in ['knn', 'odin', 'mcdropout', 'mds', 'msp', 'tapudd']:
-            # for postprocessor_name in ['mcdropout']:
-                print(postprocessor_name)
-                args.ckpt_dir = f'/home/edlab/shkim/RELIABLE/checkpoints/scratch/{model_name}_{seed}/best.ckpt'
-                args.seed = seed
-                args.model_name = model_name
-                if model_name == 'swin':
-                    args.model_name = 'swin_extra'
-                elif model_name == 'dense':
-                    args.model_name = 'densenet201'
-                elif model_name == 'vit':
-                    args.model_name = 'vit_30_16'
-                args.postprocessor_name = postprocessor_name
-
-                with open(os.path.join(args.config, f'{args.postprocessor_name}.yaml')) as f:
-                    config = yaml.safe_load(f)
-
-                for k, v in config.items():
-                    args.__setattr__(k, v)
-
-                if postprocessor_name == 'odin':
-                    classify_main(args)
-
-                OOD_main(args)
+    OOD_main(args)
 
 
 if __name__ == '__main__':

@@ -95,10 +95,6 @@ class BaseModule(pl.LightningModule):
         return output
 
     def on_validation_epoch_end(self):
-        '''
-        validation_step_outputs: list
-        DDP에서는 'GPU process' 별로 validation_step, validation_step_end를 거쳐 validation_step_ouptuts라는 리스트에 원소로 쌓인다.
-        '''
 
         preds = []
         labels = []
@@ -112,7 +108,6 @@ class BaseModule(pl.LightningModule):
 
         loss = F.cross_entropy(preds, labels)
         acc = (preds.argmax(dim=-1) == labels).float().mean()
-        # print(f'val_acc: {acc}', end='\n')
 
         self.log('val_loss', loss, sync_dist=True)
         self.log('val_acc', acc, sync_dist=True)
@@ -122,10 +117,6 @@ class BaseModule(pl.LightningModule):
         return loss
 
     def on_test_epoch_end(self):
-        '''
-        test_step_outputs: list
-        DDP에서는 'GPU process' 별로 test_step, test_step_end를 거쳐 test_step_ouptuts라는 리스트에 원소로 쌓인다.
-        '''
         pass
 
     def configure_optimizers(self):

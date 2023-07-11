@@ -11,9 +11,6 @@ from models.convnext_model import ConvNext
 from models.mlpmixer_model import MLPMixerModule
 from models.swin_transformer_model import SwinTransformerModule
 from models.densenet_model import DenseNetModule
-# from models.efficientnet_model import EfficientNetModule
-# from models.cnn_model import CNNNet
-# from models.resnext import ResNextModule
 
 class SimCLRModule(SSLBaseModule):
     def __init__(self, args):
@@ -21,7 +18,7 @@ class SimCLRModule(SSLBaseModule):
 
         self.projection_head = None
 
-        self.temperature = 0.5 # (maybe) TODO: hyperparam으로 추가하기
+        self.temperature = 0.5
 
         if isinstance(self.model, (VisionTransformerModule, DenseNetModule, ConvNext, MLPMixerModule, SwinTransformerModule)):
             self.projection_head = nn.Sequential(
@@ -29,12 +26,6 @@ class SimCLRModule(SSLBaseModule):
                 nn.ReLU(inplace=True),
                 nn.Linear(4 * self.model.hidden_dim, self.model.hidden_dim)
             )
-
-        # elif isinstance(self.model, CNNNet):
-        #     pass
-
-        # elif isinstance(self.model, ResNextModule):
-        #     pass
 
         assert self.projection_head is not None
 
@@ -47,18 +38,10 @@ class SimCLRModule(SSLBaseModule):
     def _calculate_loss(self, batch, mode='train'):
         imgs1, imgs2, _ = batch
         imgs = torch.concat((imgs1, imgs2))
-    
-        # proj_feats1 = self.projection_head(self.model(imgs1))
-        # proj_feats2 = self.projection_head(self.model(imgs2))
-        # print(imgs.shape)
 
         feats = self.model(imgs)
-        # print(feats.shape)
 
         proj_feats = self.projection_head(feats)
-        # print(proj_feats.shape)
-
-        # proj_feats = torch.concat((proj_feats1, proj_feats2))
 
         pairwise_sim = F.cosine_similarity(proj_feats[:, None, :], proj_feats[None, :, :], dim=-1)
         
@@ -90,10 +73,6 @@ class SimCLRModule(SSLBaseModule):
 
     def training_step(self, batch, batch_idx):
         return self._calculate_loss(batch, 'train')
-
-        # self.log('train_loss', loss, sync_dist=True)
-
-        # return loss
 
     def validation_step(self, batch, batch_idx):
         return self._calculate_loss(batch, 'val')

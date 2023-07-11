@@ -8,32 +8,16 @@ dataset:
   batch_size: 4
   dataloader_num_workers: 8
   train:
-    label_path: '/home/edlab/shkim/RELIABLE/data/imagenet21k/final_dataset/final_train'
-    # label_path: '/home/edlab/jylee/RELIABLE/data/final_dataset/final_train'
-    imagenet_path: '/home/data_storage/imagenet/train'
-    imagenet21k_path: '/home/edlab/shkim/RELIABLE/data/imagenet21k/raw'
-    celeba_path: '/home/data_storage/CelebA/celeba/img_align_celeba'
-    giraffe_path: '/home/edlab/jylee/RELIABLE/data/animal/giraffe/data'
-    kangaroo_path: '/home/edlab/jylee/RELIABLE/data/animal/kangaroo/data'
-    lsp_path: '/home/edlab/jylee/RELIABLE/data/LSP/train'
-    rhino_path: '/home/edlab/jylee/RELIABLE/data/animal/rhino/data'
-    gorilla_path: '/home/edlab/jylee/RELIABLE/data/animal/gorilla/data'
+    label_path: './VisAlign_dataset/train_split_filenames/final_train'
+    imagenet21k_path: './VisAlign_dataset/train_files'
   eval:
-    label_path: '/home/edlab/shkim/RELIABLE/data/imagenet21k/final_dataset/final_eval'
-    # label_path: '/home/edlab/jylee/RELIABLE/data/final_dataset/final_eval'
-    imagenet_path: '/home/data_storage/imagenet/train'
-    imagenet21k_path: '/home/edlab/shkim/RELIABLE/data/imagenet21k/raw'
-    celeba_path: '/home/data_storage/CelebA/celeba/img_align_celeba'
-    giraffe_path: '/home/edlab/jylee/RELIABLE/data/animal/giraffe/data'
-    kangaroo_path: '/home/edlab/jylee/RELIABLE/data/animal/kangaroo/data'
-    lsp_path: '/home/edlab/jylee/RELIABLE/data/LSP/train'
-    rhino_path: '/home/edlab/jylee/RELIABLE/data/animal/rhino/data'
-    gorilla_path: '/home/edlab/jylee/RELIABLE/data/animal/gorilla/data'
+    label_path: './VisAlign_dataset/train_split_filenames/final_eval'
+    imagenet21k_path: './VisAlign_dataset/train_files'
 
 model:
   num_classes: 10
-  pretrained_weights: True
-  freeze_weights: True
+  pretrained_weights: False
+  freeze_weights: False
 
 vit:
   embed_dim: 256

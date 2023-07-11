@@ -12,16 +12,6 @@ Jaeseok Choi,
 O-Kil Kwon,
 Edward Choi
 
-## Abstract
- AI alignment refers to models acting towards human-intended goals, preferences, or ethical principles.
-Given that most large-scale deep learning models act as black boxes and cannot be manually controlled, analyzing the similarity between models and humans can be a proxy measure for ensuring AI safety.
-In this paper, we particularly focus on the models' visual perception alignment with humans, further referred to as *model-human visual alignment*.
-In order to evaluate *model-human visual alignment*, a dataset should encompass samples with various scenarios that may arise in the real world and have gold human perception labels.
-Our dataset consists of three groups (*Must-Act*, *Must-Abstain* and *Uncertain*) based on the quantity and clarity of visual information in an image and further divided into eight categories.
-All samples have a gold human perception label; even Uncertain (*e*.*g*. severely blurry) sample labels were obtained via crowd-sourcing.
-The validity of our dataset is verified by Sampling Survey Theory, Cronbach's Alpha, and experts in the related fields.
-Using our dataset, we analyze the visual alignment and reliability of five popular visual perception models and seven abstention methods.
-Our code and data will be released upon acceptance.
 
 ## Requirements
 - `pytorch==1.12.1`
@@ -34,7 +24,7 @@ Our code and data will be released upon acceptance.
 - `mlp-mixer-pytorch==0.1.1`
 
 ## Dataset
-The train set and the open test set can be downloaded from [here](https://www.dropbox.com/s/p19z9xr3l8o7dzu/VisAlign.tar.gz).
+The train set and the open test set can be downloaded from [here](https://www.dropbox.com/scl/fi/e5p5epgvg2d9bniy1v81e/VisAlign.tar.gz?rlkey=69mhbl4v5uowpy27ox6si9qgo&dl=0).
 
 After extracting the file, you will have the following files/directories:
 ```
@@ -72,23 +62,38 @@ You can choose the model architecture and model size using the `model_name` argu
 - DenseNet: `densenet_extra`
 - MLP-Mixer: `mlp`
 
+To finetune pre-trained model, please change `pretrained_weights` and `freeze_weights` to `True`.
+
+Also, you can train Self-supervised model using the following command:
+```
+python main.py --early_stopping --save_dir={checkpoint_save_directory} --model_name={model_name} --ssl --ssl_type={ssl_type}
+```
+You can choose the ssl type using `ssl_type` argument.
+- SimCLR: `simclr`
+- BYOL: `byol`
+- DINO: `dino`
+
+
 ## Evaluate
-You can evaluate abstention function using the follwoing command:
+You can evaluate abstention function using the following command:
 ```
 python test_main.py 
-  --save_dir {save_dir} # directory to save abstention function result
-  --ckpt_dir {ckpt_dir} # directory where model checkpoints exist
-  --model_name {model_name}
-  --postprocessor_name {abstention_function}
+  --save_dir {save_dir}                       # directory to save abstention function result
+  --ckpt_dir {ckpt_dir}                       # directory where model checkpoints exist
+  --model_name {model_name}                   # model name we want to evaluate
+  --postprocessor_name {abstention_function}  # name of the postprocessor
+  --test_dataset_path {test_dataset_path}     # path to open_test_set
+  --train_dataset_path {train_dataset_path}   # path to train set, this is needed to calculate distance for distance-based functions
 ```
-You can choose the abstention function using `postprocessor_name` argument. The choices of abstention functions are `knn`, `mcdropout`, `mds`, `odin`, `msp`, `ensemble`, `tapudd`.
+You can choose the abstention function using `postprocessor_name` argument. The choices of abstention functions are `knn`, `mcdropout`, `mds`, `odin`, `msp`, `tapudd`.
 
 You can evaluate a model's visual alignment via Hellinger's distance as described in our paper.
 <!-- This implementation additionally allows you to report the proposed reliability score, which lets you choose a cost value *c* for incorrect decisions. -->
 ```
 python evaluate_visual_alignment.py 
-  --save_dir {save_dir}          # directory where the absention function results are stored
-  --dataset_path {dataset_path}  # directory wehre dataset is stored
+  --save_dir {save_dir}                 # directory where the absention function results are stored
+  --test_filenames_path {dataset_path}  # directory where test dataset filenames are stored
+  --corruption_path                     # open_test_corruption_labels.pk file path
 ```
 
 ## Citation

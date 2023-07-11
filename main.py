@@ -10,7 +10,6 @@ from models_selfsupervised.byol_model import BYOLModule
 from models_selfsupervised.dino_model import DINOModule
 
 from dataset.imagenet import ImageNetModule
-from dataset.imagenet_pretrain import ImageNetPretrainModule
 from dataset.imagenet_selfsupervised import ImageNetSSLModule
 
 from models_selfsupervised.model_types import SIMCLR, BYOL, DINO
@@ -33,8 +32,6 @@ def get_train_config(args):
     else:
         monitor = 'val_acc'
 
-    # Resume from checkpoint
-
 
     # Early Stopping Callback
     if args.early_stopping is True:
@@ -47,11 +44,22 @@ def get_train_config(args):
         callbacks.append(early_stop_callback)
 
     # Save File Callback
-    if not args.debug:
-        if not args.ssl:
+    if not args.ssl:
+        checkpoint_callback = pl.callbacks.ModelCheckpoint(
+            dirpath=args.save_dir,
+            filename="{epoch:06}--{val_acc:.4f}",
+            verbose=True,
+            save_last=True,
+            monitor=monitor,
+            save_top_k=args.save_top_k,
+            mode='max',
+        )
+        callbacks.append(checkpoint_callback)
+    else:
+        if args.ssl_type == SIMCLR:
             checkpoint_callback = pl.callbacks.ModelCheckpoint(
                 dirpath=args.save_dir,
-                filename="{epoch:06}--{val_acc:.4f}",
+                filename="{epoch:06}--{val_acc_top5:.4f}",
                 verbose=True,
                 save_last=True,
                 monitor=monitor,
@@ -59,40 +67,22 @@ def get_train_config(args):
                 mode='max',
             )
             callbacks.append(checkpoint_callback)
-        else:
-            if args.ssl_type == SIMCLR:
-                checkpoint_callback = pl.callbacks.ModelCheckpoint(
-                    dirpath=args.save_dir,
-                    filename="{epoch:06}--{val_acc_top5:.4f}",
-                    verbose=True,
-                    save_last=True,
-                    monitor=monitor,
-                    save_top_k=args.save_top_k,
-                    mode='max',
-                )
-                callbacks.append(checkpoint_callback)
-            if args.ssl_type == BYOL:
-                checkpoint_callback = pl.callbacks.ModelCheckpoint(
-                    dirpath=args.save_dir,
-                    filename="{epoch:06}--{val_loss:.4f}",
-                    verbose=True,
-                    save_last=True,
-                    # monitor=monitor,
-                    # save_top_k=args.save_top_k,
-                    # mode='max',
-                )
-                callbacks.append(checkpoint_callback)
-            if args.ssl_type == DINO:
-                checkpoint_callback = pl.callbacks.ModelCheckpoint(
-                    dirpath=args.save_dir,
-                    filename="{epoch:06}--{val_loss:.4f}",
-                    verbose=True,
-                    save_last=True,
-                    # monitor=monitor,
-                    # save_top_k=args.save_top_k,
-                    # mode='max',
-                )
-                callbacks.append(checkpoint_callback)
+        if args.ssl_type == BYOL:
+            checkpoint_callback = pl.callbacks.ModelCheckpoint(
+                dirpath=args.save_dir,
+                filename="{epoch:06}--{val_loss:.4f}",
+                verbose=True,
+                save_last=True,
+            )
+            callbacks.append(checkpoint_callback)
+        if args.ssl_type == DINO:
+            checkpoint_callback = pl.callbacks.ModelCheckpoint(
+                dirpath=args.save_dir,
+                filename="{epoch:06}--{val_loss:.4f}",
+                verbose=True,
+                save_last=True,
+            )
+            callbacks.append(checkpoint_callback)
 
     config = {
         'max_epochs': args.n_epochs,
@@ -111,15 +101,12 @@ def main():
     parser.add_argument('--seed', default=45)
     parser.add_argument('--early_stopping', action='store_true')
     parser.add_argument('--early_stopping_patience', default=15, type=int)
-    parser.add_argument('--debug', action='store_true')
     parser.add_argument('--save_dir', default='./', type=str)
     parser.add_argument('--n_epochs', default=1000, type=int)
     parser.add_argument('--save_top_k', default=10, type=int)
     parser.add_argument('--reload_ckpt_dir', type=str)
     parser.add_argument('--n_gpus', default=1, type=int)
     parser.add_argument('--model_name', type=str)
-    parser.add_argument('--wandb_exec_name', type=str)
-    parser.add_argument('--wandb_run_name', type=str)
     parser.add_argument('--batch_size', default=16, type=int)
     parser.add_argument('--ssl', action='store_true')
     parser.add_argument('--ssl_type', type=str, choices=[SIMCLR, BYOL, DINO])
@@ -147,10 +134,6 @@ def main():
     torch.backends.cudnn.determinstic = True
     torch.backends.cudnn.benchmark = False
 
-    # logger
-    if not args.debug:
-        logger = pl.loggers.WandbLogger(config=args, project=args.wandb_run_name, name=args.wandb_exec_name, entity='image-reliability', save_dir=f'/home/edlab/{os.getlogin()}/RELIABLE/reliable_project')
-
     # Call Dataset
     if args.ssl is True:
 
@@ -172,10 +155,7 @@ def main():
         assert model is not None
 
     else:
-        if args.dataset['name'] == 'imagenet_pretrain':
-            dataloader = ImageNetPretrainModule(args)
-        else:
-            dataloader = ImageNetModule(args)
+        dataloader = ImageNetModule(args)
 
         if args.cont_ssl:
             assert args.ssl_ckpt_dir is not None
@@ -190,27 +170,14 @@ def main():
     # Call Trainer Config
     trainer_config = get_train_config(args)
 
-    if args.debug:
-        trainer = pl.Trainer(
-            **trainer_config,
-            num_sanity_val_steps=2,
-            gradient_clip_val=0.5,
-            accelerator='cuda',
-            log_every_n_steps=10,
-            strategy=DDPStrategy(find_unused_parameters=False),
-            # plugins=DDPStrategy(find_unused_parameters=False),
-        )
-    elif not args.debug:
-        trainer = pl.Trainer(
-            **trainer_config,
-            num_sanity_val_steps=3,
-            gradient_clip_val=0.5,
-            accelerator='cuda',
-            log_every_n_steps=10,
-            strategy=DDPStrategy(find_unused_parameters=False),
-            # plugins=DDPStrategy(find_unused_parameters=False),
-            logger=logger,
-        )
+    trainer = pl.Trainer(
+        **trainer_config,
+        num_sanity_val_steps=3,
+        gradient_clip_val=0.5,
+        accelerator='cuda',
+        log_every_n_steps=10,
+        strategy=DDPStrategy(find_unused_parameters=False),
+    )
 
     if args.reload_ckpt_dir is not None:
         print(f"The model will be resumed from ckpt at {args.reload_ckpt_dir}")
@@ -220,7 +187,6 @@ def main():
         datamodule=dataloader,
         ckpt_path=args.reload_ckpt_dir
     )
-    # trainer.test()
 
 
 if __name__ == '__main__':
