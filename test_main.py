@@ -148,11 +148,11 @@ def OOD_main(args):
 
     dataset_path = {
         'train': {
-            'label_path': f'{args.train_dataset_path}/train_split_filename/final_train',
+            'label_path': f'{args.train_dataset_path}/train_split_filenames/final_train',
             'imagenet21k_path': f'{args.train_dataset_path}/train_files',
         },
         'eval': {
-            'label_path': f'{args.train_dataset_path}/train_split_filename/final_eval',
+            'label_path': f'{args.train_dataset_path}/train_split_filenames/final_eval',
             'imagenet21k_path': f'{args.train_dataset_path}/train_files',
         }
     }
@@ -215,6 +215,15 @@ def main():
     args = parser.parse_args()
 
     assert args.ckpt_dir is not None, 'Please specify checkpoint file path'
+
+
+
+    with open(os.path.join(args.config, f'{args.postprocessor_name}.yaml')) as f:
+        config = yaml.safe_load(f)
+
+    for k, v in config.items():
+        args.__setattr__(k, v)
+
     # ID Dataset classification
     classify_main(args)
 

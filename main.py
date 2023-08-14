@@ -28,7 +28,7 @@ def get_train_config(args):
     callbacks.append(lr_callback)
 
     if args.ssl:
-        monitor = 'val_acc_top5'
+        monitor = 'val_loss'
     else:
         monitor = 'val_acc'
 

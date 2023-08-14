@@ -112,7 +112,7 @@ class OODImageNetTest(Dataset):
         # file_list = ['category3.txt']
 
         for file in file_list:
-            with open(os.path.join(dataset_path, file), 'r') as f:
+            with open(os.path.join(dataset_path, 'label', file), 'r') as f:
                 image_names = f.read().split('\n')
 
             image_names = image_names[:-1]

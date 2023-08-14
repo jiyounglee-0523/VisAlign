@@ -53,7 +53,22 @@ dataset:
 ## Train
 You can train a baseline model using the following command:
 ```
-python main.py --early_stopping --save_dir={checkpoint_save_directory} --model_name={model_name}
+python main.py
+  --config {config}                                   # path to the config yaml file
+  --seed {seed}                                       # environment seed
+  --early_stopping                                    # activate early stopping
+  --early_stopping_patience {early_stopping_patience} # number of epochs for early stopping
+  --save_dir {save_dir}                               # path to save checkpoints
+  --n_epochs {n_epochs}                               # number of epochs
+  --save_top_k {save_top_k}                           # number of model checkpoints to save
+  --reload_ckpt_dir {reload_ckpt_dir}                 # continue an unfinished session
+  --n_gpus {n_gpus}                                   # number of GPUs to use during training
+  --model_name {model_name}                           # name of the model
+  --batch_size {batch_size}                           # batch size
+  --ssl                                               # option to train self-supervised
+  --ssl_type {ssl_type}                               # self-supervised learning method
+  --cont_ssl                                          # option to fine-tune an SSL-trained model
+  --ssl_ckpt_dir {ssl_ckpt_dir}                       # path to saved SSL-trained model checkpoint
 ```
 You can choose the model architecture and model size using the `model_name` argument. The model sizes we used in our baseline experiments are as follows:
 - ViT: `vit_30_16`
@@ -62,16 +77,21 @@ You can choose the model architecture and model size using the `model_name` argu
 - DenseNet: `densenet_extra`
 - MLP-Mixer: `mlp`
 
-To finetune pre-trained model, please change `pretrained_weights` and `freeze_weights` to `True`.
-
-Also, you can train Self-supervised model using the following command:
-```
-python main.py --early_stopping --save_dir={checkpoint_save_directory} --model_name={model_name} --ssl --ssl_type={ssl_type}
-```
-You can choose the ssl type using `ssl_type` argument.
+You can choose from the following SSL methods for the `ssl_type` argument.
 - SimCLR: `simclr`
 - BYOL: `byol`
 - DINO: `dino`
+
+To finetune pre-trained model, please change `pretrained_weights` and `freeze_weights` to `True` in `config/imagenet.yaml`.
+
+To get started, Here are simple commands for training and SSL training:
+```
+# simple command for training
+python main.py --early_stopping --save_dir {checkpoint_save_directory} --model_name {model_name}
+
+# simple command for SSL training
+python main.py --early_stopping --save_dir {checkpoint_save_directory} --model_name {model_name} --ssl --ssl_type {ssl_type}
+```
 
 
 ## Evaluate
@@ -84,6 +104,7 @@ python test_main.py
   --postprocessor_name {abstention_function}  # name of the postprocessor
   --test_dataset_path {test_dataset_path}     # path to open_test_set
   --train_dataset_path {train_dataset_path}   # path to train set, this is needed to calculate distance for distance-based functions
+  --seed {seed}                               # seed used when training, used for locating result filename
 ```
 You can choose the abstention function using `postprocessor_name` argument. The choices of abstention functions are `knn`, `mcdropout`, `mds`, `odin`, `msp`, `tapudd`.
 
@@ -94,6 +115,9 @@ python evaluate_visual_alignment.py
   --save_dir {save_dir}                 # directory where the absention function results are stored
   --test_filenames_path {dataset_path}  # directory where test dataset filenames are stored
   --corruption_path                     # open_test_corruption_labels.pk file path
+  --seed {seed}                         # seed used when training
+  --model_name {model_name}             # model name we want to evaluate
+  --ood_method {ood_method}             # name of the postprocessor
 ```
 
 ## Citation
