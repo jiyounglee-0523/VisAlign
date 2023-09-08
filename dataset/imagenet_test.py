@@ -54,26 +54,15 @@ class IDImageNetTest(Dataset):
         ])
 
         self.data = list()
-        self.target = list()
 
         file_list = ['category1.txt', 'category2.txt', 'category3.txt', 'category4.txt', 'category5.txt', 'category6.txt', 'category7.txt', 'category8.txt']
 
         for file in file_list:
-            with open(os.path.join(dataset_path, 'label', file), 'r') as f:
+            with open(os.path.join(dataset_path, 'filenames', file), 'r') as f:
                 image_names = f.read().split('\n')
 
             image_names = image_names[:-1]
             self.data.extend(image_names)
-
-            if file in ['category3.txt']:
-
-                labels = [return_int_label(image_name) for image_name in image_names]
-                self.target.extend(labels)
-
-            else:
-                self.target.extend([10] * len(image_names))
-
-
 
     def __len__(self):
         return len(self.data)
@@ -86,9 +75,8 @@ class IDImageNetTest(Dataset):
         image_data = Image.open(path).convert('RGB')
         image_data = self.transform(image_data)
 
-        target = torch.LongTensor([self.target[item]])
 
-        return (image, image_data, target)
+        return (image, image_data)
 
 
 class OODImageNetTest(Dataset):
@@ -109,7 +97,6 @@ class OODImageNetTest(Dataset):
         self.data = list()
 
         file_list = ['category1.txt', 'category2.txt', 'category3.txt', 'category4.txt', 'category5.txt', 'category6.txt', 'category7.txt', 'category8.txt']
-        # file_list = ['category3.txt']
 
         for file in file_list:
             with open(os.path.join(dataset_path, 'label', file), 'r') as f:

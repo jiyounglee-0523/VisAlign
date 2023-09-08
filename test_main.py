@@ -104,31 +104,25 @@ def classify_main(args):
     model = model.cuda()
 
     image_names = []
-    gt_targets = []
     predictions = []
 
     with torch.no_grad():
-        for (image_name, image, target) in tqdm(id_dataloader):
+        for (image_name, image) in tqdm(id_dataloader):
             image = image.cuda()
 
             # forward
             prediction = model(image)
             prediction = F.softmax(prediction, dim=-1)
 
-            # target
-            target = F.one_hot(target, num_classes=11)
-
             image_names.extend(image_name)
-            gt_targets.append(target)
             predictions.append(prediction)
 
-    gt_targets = torch.vstack(gt_targets)
     predictions = torch.vstack(predictions)
 
     id_prediction = dict()
 
-    for image_name, gt_target, prediction in zip(image_names, gt_targets, predictions):
-        id_prediction[image_name] = (gt_target, prediction)
+    for image_name, prediction in zip(image_names, predictions):
+        id_prediction[image_name] = prediction
 
     with open(os.path.join(args.save_dir, f'{args.model_name}-{args.seed}-id_prediction.pk'), 'wb') as f:
         pickle.dump(id_prediction, f)

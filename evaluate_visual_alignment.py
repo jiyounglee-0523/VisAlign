@@ -14,19 +14,6 @@ import pickle
 
 
 def evaluate(args):
-    label2int = {
-        'tiger': 0,
-        'zebra': 1,
-        'camel': 2,
-        'giraffe': 3,
-        'elephant': 4,
-        'rhino': 5,
-        'gorilla': 6,
-        'bear': 7,
-        'kangaroo': 8,
-        'human': 9,
-
-    }
 
     PATH = args.test_filenames_path
 
@@ -72,9 +59,8 @@ def evaluate(args):
 
     files = category1_files + category2_files + category3_files + category4_files + category5_files + category6_files + category7_files + category8_files
 
-    # corruption_label
-    with open(args.corruption_path, 'rb') as f:
-        corruption_label = pickle.load(f)
+    with open(args.label_path, 'rb') as f:
+        label = pickle.load(f)
 
     result_df = pd.DataFrame(columns=[
         'model',
@@ -137,7 +123,6 @@ def evaluate(args):
     category7_list = list()
     category8_list = list()
 
-    #             for image in images:
     for image in files:
         if ood_score[image] > 1:
             ood_score[image] = 1
@@ -146,20 +131,10 @@ def evaluate(args):
             abstention_rate = (1 - ood_score[image])
 
         # noramlize remaining probability
-        gt = id_prediction[image][0]
-        prediction = id_prediction[image][1]
+        prediction = id_prediction[image]
 
-        if image in category1_files:
-            label = re.split(r'(\d+)', image)[0]
-            gt = F.one_hot(torch.LongTensor([label2int[label]]), num_classes=11)
-
-        elif image in category2_files:
-            label = image.split(' ')[0][:-1]
-            gt = F.one_hot(torch.LongTensor([label2int[label]]), num_classes=11)
-
-        elif image in category8_files:
-            gt = corruption_label[image]
-            gt = torch.Tensor(gt)
+        gt = label[image]
+        gt = torch.Tensor(gt)
 
         prediction = prediction * (1 - abstention_rate)
         prediction = torch.cat((prediction.cpu(), torch.Tensor([abstention_rate])))
@@ -209,7 +184,7 @@ def main():
 
     parser.add_argument('--save_dir', default='./', type=str, help='output directory used in test_main.py')
     parser.add_argument('--test_filenames_path', default='./VisAlign_dataset/open_test_set/label', type=str)
-    parser.add_argument('--corruption_path', default='./VisAlign_dataset/open_test_corruption_labels.pk')
+    parser.add_argument('--label_path', default='./VisAlign_dataset/open_test_set/labels.pk')
     parser.add_argument('--seed', type=int)
     parser.add_argument('--model_name')
     parser.add_argument('--ood_method')
