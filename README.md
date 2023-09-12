@@ -24,7 +24,7 @@ Edward Choi
 - `mlp-mixer-pytorch==0.1.1`
 
 ## Dataset
-The train set and the open test set can be downloaded from [here](https://www.dropbox.com/scl/fi/pkdqr3h61tpnuh3izwjkd/VisAlign_dataset.tar.gz?rlkey=mezdoyf8ftko7ryb51twa0z0d&dl=0).
+The train set and the open test set can be downloaded from [here](https://www.dropbox.com/scl/fi/v6nqopo52295spzigr30x/VisAlign_dataset.tar.gz?rlkey=3dqe5e8ao5hmmx3qr2jd79itt&dl=0).
 
 After extracting the file, you will have the following files/directories:
 ```
