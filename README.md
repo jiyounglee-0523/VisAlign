@@ -122,5 +122,11 @@ python evaluate_visual_alignment.py
 
 ## Citation
 ```
-This section will be updated upon acceptance.
+@article{lee2024visalign,
+  title={VisAlign: Dataset for Measuring the Alignment between AI and Humans in Visual Perception},
+  author={Lee, Jiyoung and Kim, Seungho and Won, Seunghyun and Lee, Joonseok and Ghassemi, Marzyeh and Thorne, James and Choi, Jaeseok and Kwon, O-Kil and Choi, Edward},
+  journal={Advances in Neural Information Processing Systems},
+  volume={36},
+  year={2024}
+}
 ```
