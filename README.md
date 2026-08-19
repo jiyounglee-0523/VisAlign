@@ -120,6 +120,34 @@ python evaluate_visual_alignment.py
   --ood_method {ood_method}             # name of the postprocessor
 ```
 
+## Leaderboard: Submit Your Own Model
+We host a public leaderboard at [https://huggingface.co/spaces/jiyounglee0523/leaderboard](https://huggingface.co/spaces/jiyounglee0523/leaderboard), and the open test set is available as a HuggingFace dataset at [jiyounglee0523/VisAlign](https://huggingface.co/datasets/jiyounglee0523/VisAlign).
+
+A submission is a single JSON file mapping each of the 900 open-test-set filenames to an 11-dimensional distribution over `[tiger, zebra, camel, giraffe, elephant, rhino, gorilla, bear, kangaroo, human, abstain]`. Submissions are scored automatically (Hellinger distance per category + Reliability Score) and added to the leaderboard.
+
+### Option 1: Submit a model trained with this repo
+If you evaluated your model with `test_main.py` (see [Evaluate](#evaluate)), convert its outputs into a submission file:
+```
+python make_leaderboard_submission.py from-results
+  --save_dir {save_dir}       # directory used as --save_dir in test_main.py
+  --model_name {model_name}   # model name used in test_main.py
+  --ood_method {ood_method}   # postprocessor used in test_main.py (knn, mcdropout, mds, odin, msp, tapudd)
+  --seed {seed}               # seed used in test_main.py
+  --output submission.json
+```
+
+### Option 2: Submit your own model
+Copy `predictor_template.py`, implement `predict(image, file_name)` so it returns your model's 11-dimensional distribution for one image (return `None` to abstain), then run:
+```
+python make_leaderboard_submission.py custom
+  --predictor my_predictor.py   # your copy of predictor_template.py
+  --output submission.json
+```
+This downloads the open test set from HuggingFace (requires `pip install datasets`), runs your `predict` on all 900 images, and validates the output.
+
+### Upload
+Go to the [leaderboard](https://huggingface.co/spaces/jiyounglee0523/leaderboard), open the **VisAlign → Submit** tab, fill in your model name, and upload `submission.json`. Your scores appear on the leaderboard immediately. Please include a paper/repo link so results can be reproduced.
+
 ## Citation
 ```
 @article{lee2024visalign,
