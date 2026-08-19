@@ -1,19 +1,43 @@
+# VisAlign: Dataset for Measuring the Degree of Alignment between AI and Humans in Visual Perception
+
+<p align="center">
+  <a href="https://arxiv.org/abs/2308.01525"><img src="https://img.shields.io/badge/arXiv-2308.01525-b31b1b.svg" alt="arXiv"></a>
+  <a href="https://proceedings.neurips.cc/paper_files/paper/2023/hash/f37aba0f53fdb59f53254fe9098b2177-Abstract-Datasets_and_Benchmarks.html"><img src="https://img.shields.io/badge/NeurIPS%202023-Datasets%20%26%20Benchmarks-blue.svg" alt="NeurIPS 2023"></a>
+  <a href="https://huggingface.co/spaces/jiyounglee0523/leaderboard"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Leaderboard-Live-yellow.svg" alt="Leaderboard"></a>
+  <a href="https://huggingface.co/datasets/jiyounglee0523/VisAlign"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-VisAlign-yellow.svg" alt="Dataset"></a>
+</p>
+
+Official repository for the paper **[VisAlign: Dataset for Measuring the Degree of Alignment between AI and Humans in Visual Perception](https://arxiv.org/abs/2308.01525)** (NeurIPS 2023, Datasets and Benchmarks Track).
+
+> [Jiyoung Lee](https://scholar.google.com/citations?user=fSDo9-YAAAAJ), Seungho Kim, Seunghyun Won, Joonseok Lee, Marzyeh Ghassemi, James Thorne, Jaeseok Choi, O-Kil Kwon, Edward Choi
+
 ![VisAlign Overview](figures/DatasetOverview.png)
 
-# VisAlign: Dataset for Measuring the Degree of Alignment between AI and Humans in Visual Perception
-By
-Jiyoung Lee,
-Seungho Kim,
-Seunghyun Won,
-Joonseok Lee,
-Marzyeh Ghassemi,
-James Thorne,
-Jaeseok Choi,
-O-Kil Kwon,
-Edward Choi
+## Overview
 
+VisAlign is a dataset for measuring **AI-human visual alignment** in image classification. The test set consists of three sample groups — *Must-Act*, *Must-Abstain*, and *Uncertain* — divided into eight categories based on the quantity and clarity of visual information, where every sample is labeled with human perception collected via large-scale crowdsourcing. Using this benchmark, we evaluate the visual alignment of five popular visual perception architectures combined with seven abstention methods.
 
-## Requirements
+- 📄 **Paper**: [arXiv:2308.01525](https://arxiv.org/abs/2308.01525)
+- 🏆 **Public leaderboard**: [huggingface.co/spaces/jiyounglee0523/leaderboard](https://huggingface.co/spaces/jiyounglee0523/leaderboard)
+- 🤗 **Open test set**: [jiyounglee0523/VisAlign](https://huggingface.co/datasets/jiyounglee0523/VisAlign)
+
+## Table of Contents
+
+- [Installation](#installation)
+- [Dataset](#dataset)
+- [Training](#training)
+- [Evaluation](#evaluation)
+- [Leaderboard: Submit Your Own Model](#leaderboard-submit-your-own-model)
+- [Citation](#citation)
+
+## Installation
+
+```bash
+git clone https://github.com/jiyounglee-0523/VisAlign.git
+cd VisAlign
+```
+
+Requirements:
 - `pytorch==1.12.1`
 - `pytorch-lightning==1.8.5.post0`
 - `lightning-bolts==0.6.0.post1`
@@ -24,19 +48,21 @@ Edward Choi
 - `mlp-mixer-pytorch==0.1.1`
 
 ## Dataset
-The train set and the open test set can be downloaded from [here](https://www.dropbox.com/scl/fi/v6nqopo52295spzigr30x/VisAlign_dataset.tar.gz?rlkey=3dqe5e8ao5hmmx3qr2jd79itt&dl=0).
+
+The train set and the open test set can be downloaded from [here](https://www.dropbox.com/scl/fi/v6nqopo52295spzigr30x/VisAlign_dataset.tar.gz?rlkey=3dqe5e8ao5hmmx3qr2jd79itt&dl=0). The open test set is also available as a HuggingFace dataset at [jiyounglee0523/VisAlign](https://huggingface.co/datasets/jiyounglee0523/VisAlign).
 
 After extracting the file, you will have the following files/directories:
 ```
-open_test_corruption_labels.pk 
+open_test_corruption_labels.pk
 open_test_set/
 train_files/
 train_split_filenames/
 ├─  final_eval/
 └─  final_train/
 ```
+
 In the `config/imagenet.yaml` file, replace the following paths:
-```
+```yaml
 ...
 dataset:
   ...
@@ -50,9 +76,10 @@ dataset:
     ...
 ```
 
-## Train
+## Training
+
 You can train a baseline model using the following command:
-```
+```bash
 python main.py
   --config {config}                                   # path to the config yaml file
   --seed {seed}                                       # environment seed
@@ -70,22 +97,29 @@ python main.py
   --cont_ssl                                          # option to fine-tune an SSL-trained model
   --ssl_ckpt_dir {ssl_ckpt_dir}                       # path to saved SSL-trained model checkpoint
 ```
-You can choose the model architecture and model size using the `model_name` argument. The model sizes we used in our baseline experiments are as follows:
-- ViT: `vit_30_16`
-- Swin Transformer: `swin_extra`
-- ConvNeXt: `convnext_extra`
-- DenseNet: `densenet_extra`
-- MLP-Mixer: `mlp`
 
-You can choose from the following SSL methods for the `ssl_type` argument.
-- SimCLR: `simclr`
-- BYOL: `byol`
-- DINO: `dino`
+**Model architectures** (`--model_name`) used in our baseline experiments:
 
-To finetune pre-trained model, please change `pretrained_weights` and `freeze_weights` to `True` in `config/imagenet.yaml`.
+| Architecture | `model_name` |
+|---|---|
+| ViT | `vit_30_16` |
+| Swin Transformer | `swin_extra` |
+| ConvNeXt | `convnext_extra` |
+| DenseNet | `densenet_extra` |
+| MLP-Mixer | `mlp` |
 
-To get started, Here are simple commands for training and SSL training:
-```
+**Self-supervised learning methods** (`--ssl_type`):
+
+| Method | `ssl_type` |
+|---|---|
+| SimCLR | `simclr` |
+| BYOL | `byol` |
+| DINO | `dino` |
+
+To finetune a pre-trained model, set `pretrained_weights` and `freeze_weights` to `True` in `config/imagenet.yaml`.
+
+To get started, here are simple commands for training and SSL training:
+```bash
 # simple command for training
 python main.py --early_stopping --save_dir {checkpoint_save_directory} --model_name {model_name}
 
@@ -93,11 +127,11 @@ python main.py --early_stopping --save_dir {checkpoint_save_directory} --model_n
 python main.py --early_stopping --save_dir {checkpoint_save_directory} --model_name {model_name} --ssl --ssl_type {ssl_type}
 ```
 
+## Evaluation
 
-## Evaluate
-You can evaluate abstention function using the following command:
-```
-python test_main.py 
+You can evaluate an abstention function using the following command:
+```bash
+python test_main.py
   --save_dir {save_dir}                       # directory to save abstention function result
   --ckpt_dir {ckpt_dir}                       # directory where model checkpoints exist
   --model_name {model_name}                   # model name we want to evaluate
@@ -106,13 +140,12 @@ python test_main.py
   --train_dataset_path {train_dataset_path}   # path to train set, this is needed to calculate distance for distance-based functions
   --seed {seed}                               # seed used when training, used for locating result filename
 ```
-You can choose the abstention function using `postprocessor_name` argument. The choices of abstention functions are `knn`, `mcdropout`, `mds`, `odin`, `msp`, `tapudd`.
+You can choose the abstention function using the `--postprocessor_name` argument. The choices of abstention functions are `knn`, `mcdropout`, `mds`, `odin`, `msp`, `tapudd`.
 
-You can evaluate a model's visual alignment via Hellinger's distance as described in our paper.
-<!-- This implementation additionally allows you to report the proposed reliability score, which lets you choose a cost value *c* for incorrect decisions. -->
-```
-python evaluate_visual_alignment.py 
-  --save_dir {save_dir}                 # directory where the absention function results are stored
+You can then evaluate a model's visual alignment via Hellinger's distance as described in our paper:
+```bash
+python evaluate_visual_alignment.py
+  --save_dir {save_dir}                 # directory where the abstention function results are stored
   --test_filenames_path {dataset_path}  # directory where test dataset filenames are stored
   --corruption_path                     # open_test_corruption_labels.pk file path
   --seed {seed}                         # seed used when training
@@ -121,13 +154,15 @@ python evaluate_visual_alignment.py
 ```
 
 ## Leaderboard: Submit Your Own Model
-We host a public leaderboard at [https://huggingface.co/spaces/jiyounglee0523/leaderboard](https://huggingface.co/spaces/jiyounglee0523/leaderboard), and the open test set is available as a HuggingFace dataset at [jiyounglee0523/VisAlign](https://huggingface.co/datasets/jiyounglee0523/VisAlign).
+
+We host a public leaderboard at [huggingface.co/spaces/jiyounglee0523/leaderboard](https://huggingface.co/spaces/jiyounglee0523/leaderboard).
 
 A submission is a single JSON file mapping each of the 900 open-test-set filenames to an 11-dimensional distribution over `[tiger, zebra, camel, giraffe, elephant, rhino, gorilla, bear, kangaroo, human, abstain]`. Submissions are scored automatically (Hellinger distance per category + Reliability Score) and added to the leaderboard.
 
 ### Option 1: Submit a model trained with this repo
-If you evaluated your model with `test_main.py` (see [Evaluate](#evaluate)), convert its outputs into a submission file:
-```
+
+If you evaluated your model with `test_main.py` (see [Evaluation](#evaluation)), convert its outputs into a submission file:
+```bash
 python make_leaderboard_submission.py from-results
   --save_dir {save_dir}       # directory used as --save_dir in test_main.py
   --model_name {model_name}   # model name used in test_main.py
@@ -137,8 +172,9 @@ python make_leaderboard_submission.py from-results
 ```
 
 ### Option 2: Submit your own model
+
 Copy `predictor_template.py`, implement `predict(image, file_name)` so it returns your model's 11-dimensional distribution for one image (return `None` to abstain), then run:
-```
+```bash
 python make_leaderboard_submission.py custom
   --predictor my_predictor.py   # your copy of predictor_template.py
   --output submission.json
@@ -146,10 +182,13 @@ python make_leaderboard_submission.py custom
 This downloads the open test set from HuggingFace (requires `pip install datasets`), runs your `predict` on all 900 images, and validates the output.
 
 ### Upload
+
 Go to the [leaderboard](https://huggingface.co/spaces/jiyounglee0523/leaderboard), open the **VisAlign → Submit** tab, fill in your model name, and upload `submission.json`. Your scores appear on the leaderboard immediately. Please include a paper/repo link so results can be reproduced.
 
 ## Citation
-```
+
+If you find our work useful, please cite our paper:
+```bibtex
 @article{lee2023visalign,
   title={Visalign: Dataset for measuring the alignment between ai and humans in visual perception},
   author={Lee, Jiyoung and Kim, Seungho and Won, Seunghyun and Lee, Joonseok and Ghassemi, Marzyeh and Thorne, James and Choi, Jaeseok and Kwon, O-Kil and Choi, Edward},
@@ -159,3 +198,7 @@ Go to the [leaderboard](https://huggingface.co/spaces/jiyounglee0523/leaderboard
   year={2023}
 }
 ```
+
+## Contact
+
+For questions about the dataset or the leaderboard, please open an issue or contact [Jiyoung Lee](mailto:jiyounglee0523@gmail.com).
