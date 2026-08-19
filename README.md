@@ -150,11 +150,12 @@ Go to the [leaderboard](https://huggingface.co/spaces/jiyounglee0523/leaderboard
 
 ## Citation
 ```
-@article{lee2024visalign,
-  title={VisAlign: Dataset for Measuring the Alignment between AI and Humans in Visual Perception},
+@article{lee2023visalign,
+  title={Visalign: Dataset for measuring the alignment between ai and humans in visual perception},
   author={Lee, Jiyoung and Kim, Seungho and Won, Seunghyun and Lee, Joonseok and Ghassemi, Marzyeh and Thorne, James and Choi, Jaeseok and Kwon, O-Kil and Choi, Edward},
   journal={Advances in Neural Information Processing Systems},
   volume={36},
-  year={2024}
+  pages={77119--77148},
+  year={2023}
 }
 ```
